@@ -12,10 +12,18 @@
             <h2>Actions</h2>
             <button class="button button-primary" @click="fixAllDiscrepancies" x-show="stats.discrepancies > 0">Fix All WC Errors</button>
             <button class="button button-secondary" @click="fetchInventory">Refresh Data</button>
+            <a href="<?php echo admin_url('admin.php?page=dsm-transfer'); ?>" class="button button-secondary">Transfer Stock</a>
+            <button id="dsm-start-scan" class="button button-secondary">Start Audit (Scan)</button>
+            <button id="dsm-stop-scan" class="button button-secondary" style="display:none;">Stop Scan</button>
+            
             <label>
                 <input type="checkbox" x-model="showOnlyDiscrepancies"> Show Only Discrepancies
             </label>
         </div>
+        
+        <!-- Scanner UI -->
+        <div id="dsm-reader" style="width: 100%; max-width: 600px; margin-bottom: 20px; display:none;"></div>
+        <div id="dsm-scan-result"></div>
     </div>
 
     <hr>

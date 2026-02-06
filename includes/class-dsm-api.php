@@ -45,11 +45,22 @@ class DSM_API {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'dual_inventory';
 		
-		// Join with posts to get title, and postmeta to get current WC stock (_stock)
-		// We explicitly want to see if `_stock` differs from sum(locations).
-        // Note: _stock is in postmeta.
-		
-		$results = $wpdb->get_results( "
+		$search = $request->get_param( 'search' );
+		$args   = array();
+		$where  = "p.post_type = 'product' AND p.post_status = 'publish'";
+
+		if ( ! empty( $search ) ) {
+			$where .= " AND p.post_title LIKE %s";
+			$args[] = '%' . $wpdb->esc_like( $search ) . '%';
+		}
+
+		// Increase limit if searching to ensure we find the product
+		$limit_clause = "LIMIT 100";
+		if ( ! empty( $search ) ) {
+			$limit_clause = "LIMIT 500"; 
+		}
+
+		$sql = "
 			SELECT 
                 d.*, 
                 p.post_title, 
@@ -57,9 +68,15 @@ class DSM_API {
 			FROM $table_name d
 			LEFT JOIN {$wpdb->prefix}posts p ON d.product_id = p.ID
             LEFT JOIN {$wpdb->prefix}postmeta pm ON d.product_id = pm.post_id AND pm.meta_key = '_stock'
-			WHERE p.post_type = 'product' AND p.post_status = 'publish'
-			LIMIT 100
-		" );
+			WHERE $where
+			$limit_clause
+		";
+        
+		if ( ! empty( $args ) ) {
+			$results = $wpdb->get_results( $wpdb->prepare( $sql, $args ) );
+		} else {
+			$results = $wpdb->get_results( $sql );
+		}
         
         // Process results to flag discrepancies
         foreach ( $results as $row ) {

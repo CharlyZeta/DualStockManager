@@ -1,5 +1,16 @@
 === Changelog ===
 
+= 0.2.1 =
+*   Fix: Actualización de librería html5-qrcode (v2.3.8) para corregir escáner.
+*   Fix: Búsqueda de productos en Transferencia UI ahora usa la API para resultados completos.
+*   UX: Limpieza de formulario tras transferencia exitosa.
+
+= 0.2.0 =
+*   Feature: Nueva UI para Transferencia de Stock entre depósitos (Local, Depósito 1, Depósito 2).
+*   Feature: Integración de Escáner QR/Código de Barras en el Dashboard (Audit Mode).
+*   Frontend: Mejoras en el Dashboard con botones de acción rápida.
+*   Dev: Scripts JS para manejo de transferencias y escaneo (html5-qrcode).
+
 = 0.1.1 =
 *   Documentación: Se añade README.md con detalles técnicos de los componentes.
 *   Core: Incremento de versión inicial para seguimiento de cambios.

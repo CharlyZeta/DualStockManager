@@ -47,8 +47,7 @@ class DSM_Admin {
 	}
 
 	public function display_transfer_page() {
-		// Just reuse dashboard for now or a simple placeholder
-		echo '<h1>Transfer Stock</h1><div id="dsm-transfer-app">Coming Soon (Use API)</div>';
+		require_once DSM_PLUGIN_DIR . 'templates/transfer.php';
 	}
 
 	/**
@@ -61,12 +60,27 @@ class DSM_Admin {
 	/**
 	 * Register the JavaScript for the admin area.
 	 */
-	public function enqueue_scripts() {
+    public function enqueue_scripts() {
         // Enqueue local Alpine.js
         wp_enqueue_script( 'dsm-alpine', DSM_PLUGIN_URL . 'assets/js/vendor/alpine.min.js', array(), '3.13.3', true );
 
 		wp_enqueue_script( 'dsm-admin-script', DSM_PLUGIN_URL . 'assets/js/app.js', array( 'jquery', 'dsm-alpine' ), DSM_VERSION, true );
-		
+        
+        // Scanner Scripts (Dashboard only or global? Global for now as Audit might be needed elsewhere)
+        if ( isset( $_GET['page'] ) && 'dualstock-manager' === $_GET['page'] ) {
+            wp_enqueue_script( 'html5-qrcode', DSM_PLUGIN_URL . 'assets/js/vendor/html5-qrcode.min.js', array(), '2.3.8', true );
+            wp_enqueue_script( 'dsm-scanner', DSM_PLUGIN_URL . 'assets/js/scanner.js', array( 'jquery', 'html5-qrcode' ), DSM_VERSION, true );
+        }
+        
+        // Enqueue Transfer Script if on the transfer page
+		if ( isset( $_GET['page'] ) && 'dsm-transfer' === $_GET['page'] ) {
+			wp_enqueue_script( 'dsm-transfer-script', DSM_PLUGIN_URL . 'assets/js/admin-transfer.js', array( 'jquery' ), DSM_VERSION, true );
+			wp_localize_script( 'dsm-transfer-script', 'dsm_params', array(
+				'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
+				'nonce'     => wp_create_nonce( 'wp_rest' ),
+			));
+		}
+
 		wp_localize_script( 'dsm-admin-script', 'dsm_params', array(
 			'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),

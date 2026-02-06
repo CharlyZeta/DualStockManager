@@ -1,0 +1,6 @@
+=== Changelog ===
+
+= 0.1.1 =
+*   Documentación: Se añade README.md con detalles técnicos de los componentes.
+*   Core: Incremento de versión inicial para seguimiento de cambios.
+*   Estructura: Confirmación de estructura de archivos y carpetas.

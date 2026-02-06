@@ -1,0 +1,60 @@
+{
+  "project_name": "DualStock_Manager",
+  "version": "0.1.0",
+  "context": {
+    "business_name": "Dual Equipamientos",
+    "environment": "WordPress/WooCommerce Ecosystem",
+    "architecture": "Custom PHP/JS PWA (No external dependencies)",
+    "goal": "Omnichannel stock control with multi-location internal distribution and enhanced product metadata."
+  },
+  "technical_stack": {
+    "backend": [
+      "PHP (WordPress Core/wpdb)",
+      "REST API (Custom Endpoints)"
+    ],
+    "frontend": [
+      "Tailwind CSS",
+      "Vanilla JS / Alpine.js",
+      "HTML5 QR Code Scanner"
+    ],
+    "database": "MySQL (Custom tables within WP database)"
+  },
+  "database_schema": {
+    "table_name": "wp_dual_inventory",
+    "columns": {
+      "product_id": "BIGINT(20) UNSIGNED PRIMARY KEY (Relates to wp_posts.ID)",
+      "stock_local": "INT DEFAULT 0 (Showroom)",
+      "stock_deposito_1": "INT DEFAULT 0",
+      "stock_deposito_2": "INT DEFAULT 0",
+      "box_dimensions": "VARCHAR(100) (Format: LxWxH)",
+      "weight_kg": "DECIMAL(10,2)",
+      "last_audit_date": "DATETIME",
+      "audit_status": "ENUM('match', 'discrepancy', 'pending')"
+    }
+  },
+  "business_logic_rules": {
+    "inventory_sum_consistency": "Total_WooCommerce = stock_local + stock_deposito_1 + stock_deposito_2",
+    "write_strategy": "Every change in sub-locations must trigger a 'update_post_meta(id, '_stock', total)'",
+    "pos_integration": "Listen to WooCommerce order hooks to subtract from 'stock_local' by default",
+    "returns_workflow": "Manual input triggers: 1. Update sub-location + 2. Increment WC Total + 3. Log movement",
+    "scanning": "Camera-based barcode scanning (EAN-13/SKU) must identify product_id or variation_id"
+  },
+  "functional_modules": {
+    "dashboard": "Filter by Category/Attributes. Highlight products with audit_status != 'match'",
+    "location_manager": "Interface to transfer stock between Local <-> Depo1 <-> Galpon2 without affecting WC Total",
+    "product_enlarger": "Form to add shipping dimensions and technical data not present in standard WC",
+    "audit_mode": "Mobile-optimized 'Blind Count' scanner to verify physical vs digital stock"
+  },
+  "ui_ux_requirements": {
+    "design": "Mobile-first, high contrast for warehouse lighting",
+    "navigation": "Quick-action floating button for scanner",
+    "feedback": "Real-time sync status indicators (Green/Red icon)"
+  },
+  "implementation_roadmap": [
+    "Step 1: Create custom DB table and register WP-Admin menu",
+    "Step 2: Build PHP Class for Stock Synchronization (SyncEngine)",
+    "Step 3: Implement QR/Barcode Scanner interface using HTML5-QRCode",
+    "Step 4: Develop the 'Difference Resolver' view with attribute filters",
+    "Step 5: Integrate box-dimension fields into the warehouse UI"
+  ]
+}

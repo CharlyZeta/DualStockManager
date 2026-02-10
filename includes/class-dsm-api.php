@@ -32,6 +32,20 @@ class DSM_API {
 			'callback'            => array( $this, 'fix_wc_stock' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
 		) );
+
+        // POST /sync-products - Import missing WC products
+        register_rest_route( $namespace, '/sync-products', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'sync_products' ),
+            'permission_callback' => array( $this, 'permissions_check' ),
+        ) );
+
+        // POST /inventory/update - Live edit stock
+		register_rest_route( $namespace, '/inventory/update', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'update_stock_values' ),
+			'permission_callback' => array( $this, 'permissions_check' ),
+		) );
 	}
 
 	public function permissions_check() {
@@ -40,23 +54,43 @@ class DSM_API {
 
 	/**
 	 * Get inventory list with calculated WC Discrepancy.
+     * Supports filtering by Search Term (Name, SKU, ID) and Category.
 	 */
 	public function get_inventory( $request ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'dual_inventory';
 		
-		$search = $request->get_param( 'search' );
+		$search   = $request->get_param( 'search' );
+        $category = (int) $request->get_param( 'category' );
+        
 		$args   = array();
 		$where  = "p.post_type = 'product' AND p.post_status = 'publish'";
+        $join   = "LEFT JOIN {$wpdb->prefix}posts p ON d.product_id = p.ID";
+        $join  .= " LEFT JOIN {$wpdb->prefix}postmeta pm ON d.product_id = pm.post_id AND pm.meta_key = '_stock'";
 
+        // Filter by Category
+        if ( ! empty( $category ) ) {
+            $join .= " LEFT JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id";
+            $join .= " LEFT JOIN {$wpdb->prefix}term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id";
+            $where .= " AND tt.term_id = %d";
+            $args[] = $category;
+        }
+
+        // Filter by Search (Name OR ID OR SKU)
 		if ( ! empty( $search ) ) {
-			$where .= " AND p.post_title LIKE %s";
-			$args[] = '%' . $wpdb->esc_like( $search ) . '%';
+            // Join SKU meta only if searching
+            $join .= " LEFT JOIN {$wpdb->prefix}postmeta sku_meta ON p.ID = sku_meta.post_id AND sku_meta.meta_key = '_sku'";
+            
+			$where .= " AND (p.post_title LIKE %s OR p.ID = %d OR sku_meta.meta_value LIKE %s)";
+            $like = '%' . $wpdb->esc_like( $search ) . '%';
+			$args[] = $like;      // Name
+            $args[] = is_numeric($search) ? $search : -1; // ID (match if number)
+            $args[] = $like;      // SKU
 		}
 
 		// Increase limit if searching to ensure we find the product
 		$limit_clause = "LIMIT 100";
-		if ( ! empty( $search ) ) {
+		if ( ! empty( $search ) || ! empty( $category ) ) {
 			$limit_clause = "LIMIT 500"; 
 		}
 
@@ -66,9 +100,9 @@ class DSM_API {
                 p.post_title, 
                 pm.meta_value as wc_stock
 			FROM $table_name d
-			LEFT JOIN {$wpdb->prefix}posts p ON d.product_id = p.ID
-            LEFT JOIN {$wpdb->prefix}postmeta pm ON d.product_id = pm.post_id AND pm.meta_key = '_stock'
+            $join
 			WHERE $where
+            GROUP BY d.product_id 
 			$limit_clause
 		";
         
@@ -123,4 +157,54 @@ class DSM_API {
         
         return new WP_REST_Response( array( 'success' => true ), 200 );
     }
+
+    /**
+     * Endpoint to trigger full product sync (import missing).
+     */
+    public function sync_products( $request ) {
+        $sync = new DSM_Sync_Engine();
+        $count = $sync->import_missing_products();
+        
+        return new WP_REST_Response( array( 
+            'success' => true, 
+            'imported' => $count,
+            'message' => "Se importaron exitosamente $count nuevos productos."
+        ), 200 );
+    }
+
+	/**
+	 * Endpoint to update stock values for a single product (Spreadsheet mode).
+	 */
+	public function update_stock_values( $request ) {
+		$product_id = (int) $request->get_param( 'product_id' );
+		$local      = (int) $request->get_param( 'stock_local' );
+		$dep1       = (int) $request->get_param( 'stock_deposito_1' );
+		$dep2       = (int) $request->get_param( 'stock_deposito_2' );
+
+		if ( ! $product_id ) {
+			return new WP_Error( 'missing_id', 'Product ID is required', array( 'status' => 400 ) );
+		}
+
+		$sync = new DSM_Sync_Engine();
+		
+		// Use the existing method in DSM_Sync_Engine (which we verified exists)
+		// Note: update_product_stock expects (product_id, local, dep1, dep2)
+		// It might need to be adjusted if it doesn't handle partial updates, but looking at the code
+		// we are passing all 3 values from the frontend anyway.
+		
+		// However, looking at the previous file view of DSM_Sync_Engine, the method was:
+		// public function update_product_stock( $product_id, $local, $dep1, $dep2 )
+		
+		// The frontend sends all 3. Perfect.
+		$result = $sync->update_product_stock( $product_id, $local, $dep1, $dep2 );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return new WP_REST_Response( array( 
+			'success' => true,
+			'message' => 'Stock updated locally. WC discrepancy may occur.'
+		), 200 );
+	}
 }

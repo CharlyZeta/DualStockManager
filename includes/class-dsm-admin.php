@@ -10,8 +10,8 @@ class DSM_Admin {
 	 */
 	public function add_plugin_admin_menu() {
 		add_menu_page(
-			'Dual Inventory', 
-			'Dual Inventory', 
+			'Inventario Dual', 
+			'Inventario Dual', 
 			'manage_options', 
 			'dualstock-manager', 
 			array( $this, 'display_plugin_dashboard' ), 
@@ -21,8 +21,8 @@ class DSM_Admin {
 
 		add_submenu_page(
 			'dualstock-manager',
-			'Dashboard',
-			'Dashboard',
+			'Panel Principal',
+			'Panel Principal',
 			'manage_options',
 			'dualstock-manager',
 			array( $this, 'display_plugin_dashboard' )
@@ -31,8 +31,8 @@ class DSM_Admin {
 		// Transfer submenu
 		add_submenu_page(
 			'dualstock-manager',
-			'Transfer Stock',
-			'Transfer Stock',
+			'Transferir Stock',
+			'Transferir Stock',
 			'manage_options',
 			'dsm-transfer',
 			array( $this, 'display_transfer_page' )
@@ -81,10 +81,26 @@ class DSM_Admin {
 			));
 		}
 
-		wp_localize_script( 'dsm-admin-script', 'dsm_params', array(
+        // Get categories for Dashboard filter
+        $categories = get_terms( array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+            'fields'     => 'id=>name' // Simplified map: ID => Name
+        ));
+        
+        // Format for JS: [{id: 1, name: 'Foo'}, ...]
+        $cat_list = array();
+        if ( ! is_wp_error( $categories ) ) {
+            foreach ( $categories as $id => $name ) {
+                $cat_list[] = array( 'id' => $id, 'name' => $name );
+            }
+        }
+
+		wp_localize_script( 'dsm-alpine', 'dsm_params', array(
 			'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
-            'ajax_url'  => admin_url( 'admin-ajax.php' )
+            'ajax_url'  => admin_url( 'admin-ajax.php' ),
+            'categories'=> $cat_list
 		));
 	}
 }

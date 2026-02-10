@@ -61,7 +61,63 @@ class DualStock_Manager {
 	private function define_public_hooks() {
 		$this->sync_engine->init();
 		$this->api->init();
+        
+        // Register Shortcode
+        add_shortcode( 'dualstock_manager', array( $this, 'render_frontend_dashboard' ) );
 	}
+
+    /**
+     * Shortcode callback to render the dashboard on frontend.
+     */
+    public function render_frontend_dashboard( $atts ) {
+        // Security Check
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return '<div class="error"><p>Acceso denegado. Necesitas permisos de administrador.</p></div>';
+        }
+
+        // Enqueue Assets naturally
+        $this->enqueue_frontend_assets();
+
+        // Buffer Output
+        ob_start();
+        include DSM_PLUGIN_DIR . 'templates/dashboard.php';
+        return ob_get_clean();
+    }
+
+    /**
+     * Enqueue scripts and styles for the frontend shortcode.
+     */
+    private function enqueue_frontend_assets() {
+        // Enqueue Styles
+        wp_enqueue_style( 'dsm-frontend-style', DSM_PLUGIN_URL . 'assets/css/frontend.css', array(), DSM_VERSION, 'all' );
+        wp_enqueue_style( 'dashicons' ); // Ensure dashicons are loaded on frontend
+
+        // Enqueue Scripts (Similar to Admin)
+        wp_enqueue_script( 'dsm-alpine', DSM_PLUGIN_URL . 'assets/js/vendor/alpine.min.js', array(), '3.13.3', true );
+        wp_enqueue_script( 'dsm-admin-script', DSM_PLUGIN_URL . 'assets/js/app.js', array( 'jquery', 'dsm-alpine' ), DSM_VERSION, true );
+
+        // Categories for Filter
+        $categories = get_terms( array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+            'fields'     => 'id=>name'
+        ));
+        
+        $cat_list = array();
+        if ( ! is_wp_error( $categories ) ) {
+            foreach ( $categories as $id => $name ) {
+                $cat_list[] = array( 'id' => $id, 'name' => $name );
+            }
+        }
+
+        // Localize Script
+		wp_localize_script( 'dsm-alpine', 'dsm_params', array(
+			'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
+			'nonce'     => wp_create_nonce( 'wp_rest' ),
+            'ajax_url'  => admin_url( 'admin-ajax.php' ),
+            'categories'=> $cat_list
+		));
+    }
 
 	/**
 	 * Run the loader to execute all of the hooks with WordPress.

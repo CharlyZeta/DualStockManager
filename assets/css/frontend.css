@@ -1,0 +1,157 @@
+/* Mobile Responsive Styles for DualStock Manager Frontend */
+
+@media screen and (max-width: 768px) {
+
+    /* Hide Table Header */
+    .dsm-stock-table-container table thead {
+        display: none;
+    }
+
+    /* Make rows block level with card styling */
+    .dsm-stock-table-container table tr {
+        display: block;
+        margin-bottom: 15px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Make cells block level */
+    .dsm-stock-table-container table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0 !important;
+        border-bottom: 1px solid #eee;
+        text-align: right;
+    }
+
+    .dsm-stock-table-container table td:last-child {
+        border-bottom: none;
+        justify-content: flex-end;
+        /* Action butons to the right */
+        padding-top: 15px !important;
+    }
+
+    /* Add Labels via pseudo-elements based on nth-child */
+    /* Adjust these indices if column order changes! 
+       1: Product, 2: Showroom, 3: Depo1, 4: Depo2, 5: Control, 6: WC, 7: Status, 8: Action */
+
+    .dsm-stock-table-container table td:nth-of-type(1):before {
+        content: "Producto";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(2):before {
+        content: "Showroom";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(3):before {
+        content: "Depósito 1";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(4):before {
+        content: "Depósito 2";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(5):before {
+        content: "Total Control";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(6):before {
+        content: "Stock WC";
+        font-weight: bold;
+    }
+
+    .dsm-stock-table-container table td:nth-of-type(7):before {
+        content: "Estado";
+        font-weight: bold;
+    }
+
+    /* Specific styling for the Product Name to stand out */
+    .dsm-stock-table-container table td:nth-of-type(1) {
+        flex-direction: column;
+        align-items: flex-start;
+        font-weight: bold;
+        color: #0073aa;
+        border-bottom: 2px solid #f0f0f1;
+        margin-bottom: 10px;
+        padding-bottom: 10px !important;
+    }
+
+    /* Hide label for Product name since it's obvious */
+    .dsm-stock-table-container table td:nth-of-type(1):before {
+        display: none;
+    }
+
+    /* Fix inputs width on mobile */
+    .dsm-stock-table-container input[type=number].dsm-live-edit {
+        max-width: 100px;
+        text-align: right;
+    }
+}
+
+/* Base styles needed if theme doesn't provide them (since we are not in admin) */
+.dsm-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.dsm-wrap h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+/* Button styles replication for frontend */
+.dsm-wrap .button {
+    display: inline-block;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 2.15384615;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 10px;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 3px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    color: #2271b1;
+    border-color: #2271b1;
+    background: #f6f7f7;
+    vertical-align: middle;
+}
+
+/* Hide admin-only links in frontend */
+.dsm-wrap a[href*="page=dsm-transfer"] {
+    display: none;
+}
+
+.dsm-wrap .button-primary {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+.dsm-wrap .button-small {
+    min-height: 24px;
+    line-height: 2;
+    padding: 0 8px;
+    font-size: 11px;
+}
+
+/* Helper to hide admin specific elements if any leak */
+.dsm-wrap .wp-heading-inline {
+    display: block;
+}

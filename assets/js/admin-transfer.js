@@ -16,29 +16,31 @@ jQuery(document).ready(function ($) {
         if (term.length < 3) return;
 
         searchTimer = setTimeout(() => {
-            let url = dsm_params.root + 'inventory';
-            if (term) {
-                url += '?search=' + encodeURIComponent(term);
-            }
-
-            $.ajax({
-                url: url,
-                method: 'GET',
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('X-WP-Nonce', dsm_params.nonce);
-                },
-                success: function (data) {
-                    productSelect.empty().show();
-
-                    if (data.length === 0) {
-                        productSelect.append('<option value="">No products found</option>');
-                    } else {
-                        data.forEach(item => {
-                            productSelect.append(`<option value="${item.product_id}">#${item.product_id} - ${item.post_title} (L:${item.stock_local} | D1:${item.stock_deposito_1} | D2:${item.stock_deposito_2})</option>`);
-                        });
-                    }
+            if (dsm_params.root) {
+                let url = dsm_params.root + 'inventory';
+                if (term) {
+                    url += '?search=' + encodeURIComponent(term);
                 }
-            });
+
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('X-WP-Nonce', dsm_params.nonce);
+                    },
+                    success: function (data) {
+                        productSelect.empty().show();
+
+                        if (data.length === 0) {
+                            productSelect.append('<option value="">No se encontraron productos</option>');
+                        } else {
+                            data.forEach(item => {
+                                productSelect.append(`<option value="${item.product_id}">#${item.product_id} - ${item.post_title} (L:${item.stock_local} | D1:${item.stock_deposito_1} | D2:${item.stock_deposito_2})</option>`);
+                            });
+                        }
+                    }
+                });
+            }
         }, 500);
     });
 
@@ -51,16 +53,16 @@ jQuery(document).ready(function ($) {
         const qty = $('#dsm-transfer-qty').val();
 
         if (!productId) {
-            alert('Please select a product.');
+            alert('Por favor selecciona un producto.');
             return;
         }
 
         if (fromLoc === toLoc) {
-            alert('Source and Destination must be different.');
+            alert('El origen y el destino deben ser diferentes.');
             return;
         }
 
-        msgSpan.text('Processing...').css('color', 'black');
+        msgSpan.text('Procesando...').css('color', 'black');
         $('#dsm-submit-transfer').prop('disabled', true);
 
         $.ajax({
@@ -76,7 +78,7 @@ jQuery(document).ready(function ($) {
                 qty: qty
             },
             success: function (response) {
-                msgSpan.text('Transfer Successful!').css('color', 'green');
+                msgSpan.text('¡Transferencia Exitosa!').css('color', 'green');
                 // Ticket #4: Reset form
                 $('#dsm-transfer-qty').val(1);
                 productSelect.val(null).trigger('change'); // Reset selection
@@ -85,7 +87,7 @@ jQuery(document).ready(function ($) {
                 // For now just leave it.
             },
             error: function (xhr) {
-                const err = xhr.responseJSON ? xhr.responseJSON.message : 'Unknown error';
+                const err = xhr.responseJSON ? xhr.responseJSON.message : 'Error desconocido';
                 msgSpan.text('Error: ' + err).css('color', 'red');
             },
             complete: function () {

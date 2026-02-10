@@ -1,5 +1,34 @@
 === Changelog ===
 
+= 0.2.8 =
+*   Feature: Shortcode `[dualstock_manager]` para mostrar el dashboard en el frontend (protegido).
+*   UX: Diseño responsivo (Card View) para móviles en el dashboard frontend.
+*   UX: Nuevo diseño moderno y centrado para el Modal de Transferencia.
+*   Feature: Transferencia de Stock Inline con botón en cada fila y validaciones.
+*   Feature: Edición tipo hoja de cálculo (Spreadsheet) con guardado automático AJAX.
+*   UI: Mejoras visuales en tabla (ancho de columnas, etiquetas, alineación vertical).
+*   Fix: Corrección de errores de conexión al guardar stock de productos no sincronizados.
+
+= 0.2.7 =
+*   Fix: Corregido error de carga de parámetros (categorías y conexión) en el Dashboard.
+*   Fix: Mejora en la inicialización de Alpine.js.
+
+= 0.2.5 =
+*   Localization: Traducción completa al español (Dashboard, Transferencias, Mensajes y Alertas).
+
+= 0.2.4 =
+*   Feature: Búsqueda avanzada por Nombre, SKU o ID.
+*   Feature: Filtro por Categorías de Producto en el Dashboard.
+
+= 0.2.3 =
+*   Feature: "Modo Edición" en inventario. Permite edición manual inline de stocks por depósito.
+*   UX: Cálculo visual de discrepancias en tiempo real al editar stocks.
+
+= 0.2.2 =
+*   Feature: Botón "Sync Products from WC" en Dashboard para importar catálogo existente.
+*   Feature: Barra de búsqueda y filtrado en el Dashboard.
+*   Fix: Mensaje de ayuda cuando el inventario está vacío.
+
 = 0.2.1 =
 *   Fix: Actualización de librería html5-qrcode (v2.3.8) para corregir escáner.
 *   Fix: Búsqueda de productos en Transferencia UI ahora usa la API para resultados completos.

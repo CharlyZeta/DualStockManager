@@ -50,7 +50,7 @@ jQuery(document).ready(function ($) {
         console.log(`Scan result ${decodedText}`, decodedResult);
 
         // Display result
-        $('#' + resultContainerId).html('<p>Searching for product: <strong>' + decodedText + '</strong>...</p>');
+        $('#' + resultContainerId).html('<p>Buscando producto: <strong>' + decodedText + '</strong>...</p>');
 
         // Search for product (assuming decodedText is ID or SKU)
         // We reuse the inventory search logic or call a specific endpoint
@@ -72,21 +72,20 @@ jQuery(document).ready(function ($) {
                 if (match) {
                     $('#' + resultContainerId).html(`
                         <div class="dsm-card" style="background:#eaffea; border-color:#6c6;">
-                            <h3>Product Found: #${match.product_id}</h3>
+                            <h3>Producto Encontrado: #${match.product_id}</h3>
                             <p><strong>${match.post_title}</strong></p>
                             <ul>
                                 <li>Showroom: ${match.stock_local}</li>
-                                <li>Depo 1: ${match.stock_deposito_1}</li>
-                                <li>Depo 2: ${match.stock_deposito_2}</li>
+                                <li>Depósito 1: ${match.stock_deposito_1}</li>
+                                <li>Depósito 2: ${match.stock_deposito_2}</li>
                             </ul>
-                            <p><em>(Mockup: Actions to Edit/Transfer would go here)</em></p>
                         </div>
                     `);
 
                     // Optional: Stop scanning after success
                     // html5QrcodeScanner.clear(); ...
                 } else {
-                    $('#' + resultContainerId).html('<p style="color:red">Product not found for code: ' + decodedText + '</p>');
+                    $('#' + resultContainerId).html('<p style="color:red">Producto no encontrado para el código: ' + decodedText + '</p>');
                 }
             }
         });

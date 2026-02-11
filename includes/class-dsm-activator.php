@@ -26,8 +26,24 @@ class DSM_Activator {
 			PRIMARY KEY  (product_id)
 		) $charset_collate;";
 
+        $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        $sql_logs = "CREATE TABLE $table_logs (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            date_created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+            user_id bigint(20) UNSIGNED NOT NULL,
+            product_id bigint(20) UNSIGNED NOT NULL,
+            action_type varchar(50) NOT NULL,
+            details text NOT NULL,
+            previous_state longtext NOT NULL,
+            new_state longtext NOT NULL,
+            PRIMARY KEY  (id),
+            KEY product_id (product_id),
+            KEY date_created (date_created)
+        ) $charset_collate;";
+
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 		dbDelta( $sql );
+        dbDelta( $sql_logs );
 	}
 
 }

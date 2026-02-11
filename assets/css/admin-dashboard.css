@@ -1,0 +1,155 @@
+/* Modal Styles */
+.dsm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dsm-modal-content {
+    background: #fff;
+    width: 450px;
+    max-width: 90%;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: dsm-modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dsm-modal-header {
+    padding: 15px 20px;
+    background: #f0f0f1;
+    border-bottom: 1px solid #c3c4c7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dsm-modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #1d2327;
+}
+
+.dsm-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #646970;
+    line-height: 1;
+}
+
+.dsm-close-btn:hover {
+    color: #d63638;
+}
+
+.dsm-modal-body {
+    padding: 20px;
+}
+
+.dsm-form-group {
+    margin-bottom: 20px;
+}
+
+.dsm-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #2c3338;
+}
+
+.dsm-modal-footer {
+    padding: 15px 20px;
+    background: #f6f7f7;
+    border-top: 1px solid #c3c4c7;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@keyframes dsm-modal-pop {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Spreadsheet-like input styling */
+.dsm-stock-table-container input[type=number].dsm-live-edit {
+    background: transparent;
+    border: 1px solid transparent;
+    width: 100%;
+    max-width: 80px;
+    padding: 5px;
+    transition: all 0.2s;
+}
+
+.dsm-stock-table-container input[type=number].dsm-live-edit:hover,
+.dsm-stock-table-container input[type=number].dsm-live-edit:focus {
+    background: #fff;
+    border-color: #8c8f94;
+    box-shadow: 0 0 0 1px #8c8f94;
+}
+
+/* Vertical Alignment Fix */
+.dsm-stock-table-container table td,
+.dsm-stock-table-container table th {
+    vertical-align: middle !important;
+}
+
+/* Column Widths Update */
+.dsm-col-status {
+    width: 80px;
+    /* Reduced width */
+    text-align: center;
+}
+
+.dsm-col-actions {
+    width: 140px;
+    /* Increased space for buttons */
+}
+
+/* Tabs & Stats */
+.dsm-tab-nav button {
+    margin-right: 5px;
+    margin-bottom: -1px;
+    /* Overlap border */
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.dsm-stat-box {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+}
+
+.badg {
+    display: inline-block;
+    font-size: 11px;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+}

@@ -1,5 +1,10 @@
 === Changelog ===
 
+= 0.2.9 =
+*   Fix: Corregido error crítico que impedía visualizar la lista de productos (variable mismatch).
+*   Fix: Historial de cambios y Resumen del Día ahora se actualizan automáticamente tras guardar o transferir.
+*   Dev: Añadidos mecanismos de seguridad para evitar pantallas en blanco si falla la carga de un producto.
+
 = 0.2.8 =
 *   Feature: Shortcode `[dualstock_manager]` para mostrar el dashboard en el frontend (protegido).
 *   UX: Diseño responsivo (Card View) para móviles en el dashboard frontend.

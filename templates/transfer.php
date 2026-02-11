@@ -2,7 +2,7 @@
     <h1 class="wp-heading-inline">Transferencia de Stock</h1>
     <hr class="wp-header-end">
 
-    <div class="dsm-card" style="max-width: 600px; margin-top: 20px;">
+    <div class="dsm-card dsm-transfer-card">
         <form id="dsm-transfer-form">
             <table class="form-table">
                 <tr>
@@ -10,7 +10,7 @@
                     <td>
                         <input type="text" id="dsm-product-search" class="regular-text" placeholder="Buscar por Nombre o ID...">
                         <!-- Simple dropdown or autocomplete results container -->
-                        <select id="dsm-product-select" class="regular-text" style="display:none; margin-top: 5px;">
+                        <select id="dsm-product-select" class="regular-text dsm-hidden-select">
                             <option value="">Selecciona un producto...</option>
                         </select>
                         <p class="description">Escribe para buscar, luego selecciona el producto a transferir.</p>
@@ -46,7 +46,7 @@
             
             <p class="submit">
                 <button type="submit" id="dsm-submit-transfer" class="button button-primary">Duales Transferir Stock</button>
-                <span id="dsm-transfer-message" style="margin-left: 10px; font-weight: bold;"></span>
+                <span id="dsm-transfer-message" class="dsm-transfer-message"></span>
             </p>
         </form>
     </div>

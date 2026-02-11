@@ -63,8 +63,18 @@ class DSM_Sync_Engine {
 			return new WP_Error( 'insufficient_stock', "Insufficient stock in $from" );
 		}
 		
+		// Capture previous state
+        $prev_state = $this->get_product_stock_state( $product_id );
+
 		$wpdb->query( $wpdb->prepare( "UPDATE $table_name SET $from = $from - %d WHERE product_id = %d", $qty, $product_id ) );
 		$wpdb->query( $wpdb->prepare( "UPDATE $table_name SET $to = $to + %d WHERE product_id = %d", $qty, $product_id ) );
+        
+        // Capture new state
+        $new_state = $prev_state; // Start with copy
+        $new_state[$from] -= $qty;
+        $new_state[$to] += $qty;
+        
+        $this->log_transaction( $product_id, 'transfer', "Transferred $qty from $from to $to", $prev_state, $new_state );
 		
 		$wpdb->query( "COMMIT" );
 		
@@ -172,6 +182,9 @@ class DSM_Sync_Engine {
             return true;
         }
 
+        // Capture previous state
+        $prev_state = $this->get_product_stock_state( $product_id );
+
         $updated = $wpdb->update(
             $table_name,
             array(
@@ -188,7 +201,96 @@ class DSM_Sync_Engine {
         if ( $updated === false ) {
             return new WP_Error( 'db_error', 'Could not update database.' );
         }
+        
+        // Log Transaction
+        $new_state = array(
+            'stock_local'      => $local,
+            'stock_deposito_1' => $dep1,
+            'stock_deposito_2' => $dep2
+        );
+        
+        $this->log_transaction( $product_id, 'edit', 'Manual stock update via Dashboard', $prev_state, $new_state );
 
+        return true;
+    }
+
+    /**
+     * Get current stock state for logging.
+     */
+    private function get_product_stock_state( $product_id ) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'dual_inventory';
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT stock_local, stock_deposito_1, stock_deposito_2 FROM $table_name WHERE product_id = %d", $product_id ), ARRAY_A );
+        return $row ? $row : array( 'stock_local' => 0, 'stock_deposito_1' => 0, 'stock_deposito_2' => 0 );
+    }
+
+    /**
+     * Log a stock transaction.
+     */
+    public function log_transaction( $product_id, $action_type, $details, $prev_state, $new_state ) {
+        global $wpdb;
+        $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        
+        $user_id = get_current_user_id();
+        
+        $wpdb->insert(
+            $table_logs,
+            array(
+                'date_created'   => current_time( 'mysql' ),
+                'user_id'        => $user_id,
+                'product_id'     => $product_id,
+                'action_type'    => $action_type,
+                'details'        => $details,
+                'previous_state' => json_encode( $prev_state ),
+                'new_state'      => json_encode( $new_state )
+            ),
+            array( '%s', '%d', '%d', '%s', '%s', '%s', '%s' )
+        );
+    }
+    
+    /**
+     * Revert a transaction by ID.
+     */
+    public function revert_transaction( $log_id ) {
+        global $wpdb;
+        $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        
+        $log = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_logs WHERE id = %d", $log_id ) );
+        
+        if ( ! $log ) {
+            return new WP_Error( 'not_found', 'Log entry not found.' );
+        }
+        
+        $prev_state = json_decode( $log->previous_state, true );
+        
+        if ( ! $prev_state ) {
+             return new WP_Error( 'invalid_data', 'Previous state data is corrupted.' );
+        }
+        
+        // Restore previous values
+        $result = $this->update_product_stock( 
+            $log->product_id, 
+            $prev_state['stock_local'], 
+            $prev_state['stock_deposito_1'], 
+            $prev_state['stock_deposito_2'] 
+        );
+        
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+        
+        // Log the revert action itself (update_product_stock already logs as 'edit', we might want to override or let it be)
+        // Since update_product_stock logs as 'edit', we might want to update that last log entry to be 'revert' or just add a note.
+        // For simplicity, we let it log as 'edit' but we could update the details.
+        
+        // Let's create a specific 'revert' log manually to be clear, or just let the edit flow handle it.
+        // The prompt asked for "reversiones deben generar también un registro reversible".
+        // Calling update_product_stock does exactly that: it creates a new log moving from Current -> Previous.
+        // So a Revert IS a reversible action.
+        
+        // Optionally, we could update the 'details' of the log entry just created to say "Revert of Log #ID".
+        // But for now, simple is better.
+        
         return true;
     }
 }

@@ -55,6 +55,10 @@ class DSM_Admin {
 	 */
 	public function enqueue_styles() {
 		wp_enqueue_style( 'dsm-admin-style', DSM_PLUGIN_URL . 'assets/css/style.css', array(), DSM_VERSION, 'all' );
+        
+        if ( isset( $_GET['page'] ) && 'dualstock-manager' === $_GET['page'] ) {
+            wp_enqueue_style( 'dsm-dashboard-style', DSM_PLUGIN_URL . 'assets/css/admin-dashboard.css', array(), DSM_VERSION, 'all' );
+        }
 	}
 
 	/**

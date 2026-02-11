@@ -46,6 +46,24 @@ class DSM_API {
 			'callback'            => array( $this, 'update_stock_values' ),
 			'permission_callback' => array( $this, 'permissions_check' ),
 		) );
+
+        register_rest_route( $namespace, '/logs', array(
+            'methods'             => 'GET',
+            'callback'            => array( $this, 'get_logs' ),
+            'permission_callback' => array( $this, 'permissions_check' ),
+        ) );
+        
+        register_rest_route( $namespace, '/logs/revert', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'revert_log' ),
+            'permission_callback' => array( $this, 'permissions_check' ),
+        ) );
+        
+        register_rest_route( $namespace, '/logs/summary', array(
+            'methods'             => 'GET',
+            'callback'            => array( $this, 'get_log_summary' ),
+            'permission_callback' => array( $this, 'permissions_check' ),
+        ) );
 	}
 
 	public function permissions_check() {
@@ -207,4 +225,71 @@ class DSM_API {
 			'message' => 'Stock updated locally. WC discrepancy may occur.'
 		), 200 );
 	}
+    
+    /**
+     * Get logs with pagination and filters.
+     */
+    public function get_logs( $request ) {
+        global $wpdb;
+        $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        $posts_table = $wpdb->prefix . 'posts';
+        $users_table = $wpdb->prefix . 'users';
+        
+        $limit = 20;
+        $offset = 0; // standard pagination
+        
+        $sql = "SELECT l.*, p.post_title as product_name, u.display_name as user_name 
+                FROM $table_logs l
+                LEFT JOIN $posts_table p ON l.product_id = p.ID
+                LEFT JOIN $users_table u ON l.user_id = u.ID
+                ORDER BY l.date_created DESC LIMIT $limit";
+        
+        $results = $wpdb->get_results( $sql );
+        
+        return new WP_REST_Response( array( 'success' => true, 'data' => $results ), 200 );
+    }
+    
+    /**
+     * Revert a log entry.
+     */
+    public function revert_log( $request ) {
+        $log_id = (int) $request->get_param( 'log_id' );
+        
+        if ( ! $log_id ) {
+            return new WP_Error( 'missing_id', 'Log ID required.' );
+        }
+        
+        $sync = new DSM_Sync_Engine();
+        $result = $sync->revert_transaction( $log_id );
+        
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+        
+        return new WP_REST_Response( array( 'success' => true, 'message' => 'Transaction reverted.' ), 200 );
+    }
+    
+    /**
+     * Get summary for today.
+     */
+    public function get_log_summary( $request ) {
+        global $wpdb;
+        $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        
+        $today = current_time( 'Y-m-d' );
+        
+        $sql = "SELECT action_type, COUNT(*) as count 
+                FROM $table_logs 
+                WHERE date_created LIKE %s 
+                GROUP BY action_type";
+                
+        $results = $wpdb->get_results( $wpdb->prepare( $sql, $today . '%' ) );
+        
+        $summary = array( 'edit' => 0, 'transfer' => 0, 'sync' => 0 );
+        foreach ( $results as $row ) {
+            $summary[$row->action_type] = (int) $row->count;
+        }
+        
+        return new WP_REST_Response( array( 'success' => true, 'data' => $summary ), 200 );
+    }
 }

@@ -8,19 +8,38 @@
             <p>Discrepancias: <span x-text="stats.discrepancies" :class="stats.discrepancies > 0 ? 'dsm-badge-error' : ''"></span></p>
         </div>
         
-        <div class="dsm-card">
-            <h2>Acciones</h2>
-            <button class="button button-primary" @click="fixAllDiscrepancies" x-show="stats.discrepancies > 0">Corregir Errores en WC</button>
-            <button class="button button-secondary" @click="fetchInventory">Actualizar Datos</button>
-            <button class="button button-secondary" @click="syncProducts" :disabled="isSyncing" x-text="isSyncing ? 'Sincronizando...' : 'Sincronizar Productos de WC'"></button>
-            <a href="<?php echo admin_url('admin.php?page=dsm-transfer'); ?>" class="button button-secondary">Transferir Stock</a>
-            <button id="dsm-start-scan" class="button button-secondary">Iniciar Auditoría (Escanear)</button>
-            <button id="dsm-stop-scan" class="button button-secondary" style="display:none;">Detener Escaneo</button>
+        <div class="dsm-actions-card">
+            <h3>Resumen del Día</h3>
+            <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <div class="dsm-stat-box">
+                    <span class="badg" style="background:#2271b1; color:white; padding:2px 6px; border-radius:4px;" x-text="logSummary.edit">0</span> Ediciones
+                </div>
+                <div class="dsm-stat-box">
+                    <span class="badg" style="background:#dba617; color:white; padding:2px 6px; border-radius:4px;" x-text="logSummary.transfer">0</span> Transferencias
+                </div>
+            </div>
             
-            <div style="margin-top: 10px;">
-                <label>
-                    <input type="checkbox" x-model="showOnlyDiscrepancies"> Solo Mostrar Discrepancias
-                </label>
+            <div class="dsm-tab-nav" style="border-bottom: 1px solid #ccc; margin-bottom: 15px;">
+                <button class="button" :class="{ 'button-primary': activeTab === 'inventory' }" @click="switchTab('inventory')">Inventario</button>
+                <button class="button" :class="{ 'button-primary': activeTab === 'history' }" @click="switchTab('history')">Historial de Cambios</button>
+            </div>
+
+            <div x-show="activeTab === 'inventory'">
+                <button class="button button-secondary" @click="fixWCDiscrepancy" :disabled="loading">
+                   Corregir Errores en WC
+                </button>
+                <button class="button button-secondary" @click="syncProducts" :disabled="loading" style="margin-left: 5px;">
+                   Sincronizar Productos de WC
+                </button>
+                <button class="button button-secondary" @click="startScanner" style="margin-left: 5px;">
+                    Iniciar Auditoría (Escáner)
+                </button>
+                
+                <div style="margin-top: 10px;">
+                    <label>
+                        <input type="checkbox" x-model="showDiscrepanciesOnly"> Solo Mostrar Discrepancias
+                    </label>
+                </div>
             </div>
         </div>
         
@@ -31,89 +50,144 @@
 
     <hr>
 
-    <div class="dsm-toolbar" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <!-- Category Filter -->
-        <select x-model="selectedCategory" @change="fetchInventory" class="dsm-select">
-            <option value="">Todas las Categorías</option>
-            <template x-for="cat in categories" :key="cat.id">
-                <option :value="cat.id" x-text="cat.name"></option>
-            </template>
-        </select>
+    <!-- Inventory Tab -->
+    <div x-show="activeTab === 'inventory'">
+        <div class="dsm-toolbar" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <!-- Category Filter -->
+            <select x-model="selectedCategory" @change="fetchInventory" class="dsm-select">
+                <option value="">Todas las Categorías</option>
+                <template x-for="cat in categories" :key="cat.id">
+                    <option :value="cat.id" x-text="cat.name"></option>
+                </template>
+            </select>
 
-        <!-- Search Input -->
-        <input type="text" x-model="searchQuery" @keydown.enter="fetchInventory" placeholder="Buscar por Nombre, SKU o ID..." class="regular-text" style="height: 30px; min-width: 250px;">
+            <!-- Search Input -->
+            <input type="text" x-model="searchQuery" @keydown.enter="fetchInventory" placeholder="Buscar por Nombre, SKU o ID..." class="regular-text" style="height: 30px; min-width: 250px;">
+            
+            <button class="button" @click="fetchInventory">Buscar</button>
+            <button class="button" @click="clearSearch" x-show="searchQuery.length > 0 || selectedCategory !== ''">Limpiar</button>
+        </div>
+
+        <h2>Listado de Stock</h2>
         
-        <button class="button" @click="fetchInventory">Buscar</button>
-        <button class="button" @click="clearSearch" x-show="searchQuery.length > 0 || selectedCategory !== ''">Limpiar</button>
+        <div class="dsm-stock-table-container">
+            <table class="wp-list-table widefat fixed striped table-view-list">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Producto</th>
+                        <th>Showroom</th>
+                        <th>Depósito 1</th>
+                        <th>Depósito 2</th>
+                        <th>Control</th>
+                        <th>Stock WC</th>
+                        <th class="dsm-col-status">Estado</th>
+                        <th class="dsm-col-actions">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="item in filteredItems" :key="item.product_id">
+                        <tr :class="isItemDiscrepancy(item) ? 'dsm-row-warning' : ''">
+                            <td x-text="'#' + item.product_id + ' - ' + item.post_title"></td>
+                            
+                            <!-- Stock Showroom -->
+                            <td>
+                                <input type="number" x-model.number="item.stock_local" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
+                            </td>
+                            
+                            <!-- Stock Depo 1 -->
+                            <td>
+                                <input type="number" x-model.number="item.stock_deposito_1" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
+                            </td>
+                            
+                            <!-- Stock Depo 2 -->
+                            <td>
+                                <input type="number" x-model.number="item.stock_deposito_2" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
+                            </td>
+                            
+                            <!-- Calculated Total (Reactive) -->
+                            <td>
+                                <strong x-text="calculateTotal(item)"></strong>
+                            </td>
+                            
+                            <td x-text="item.wc_stock"></td> 
+                            
+                            <td>
+                                <span x-show="isItemDiscrepancy(item)" class="dashicons dashicons-warning" style="color:red" title="Discrepancia: Total Plugin no coincide con WC"></span>
+                                <span x-show="!isItemDiscrepancy(item)" class="dashicons dashicons-yes" style="color:green" title="Correcto"></span>
+                                
+                                <!-- Saving Indicator -->
+                                <span x-show="item.isSaving" class="spinner is-active" style="float:none; margin:0;"></span>
+                            </td>
+                            
+                            <td>
+                                <!-- Fix Discrepancy Action -->
+                                <div style="display: flex; gap: 5px;">
+                                    <div x-show="isItemDiscrepancy(item)">
+                                        <button class="button button-small" @click="fixSingle(item)" title="Corregir Stock en WC">Corregir WC</button>
+                                    </div>
+                                    <button class="button button-small" @click="openTransferModal(item)" title="Transferir Stock">
+                                        <span class="dashicons dashicons-randomize" style="margin-top:2px;"></span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="items.length === 0">
+                        <td colspan="8">
+                            No se encontraron productos. <span x-show="!searchQuery && !selectedCategory">Prueba hacer clic en "Sincronizar Productos de WC" para importar tu catálogo.</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <h2>Listado de Stock</h2>
-    <div class="dsm-stock-table-container">
+    <!-- History Tab -->
+    <div x-show="activeTab === 'history'">
+        <div class="tablenav top">
+            <div class="alignleft actions">
+                <button class="button" @click="fetchLogs">Actualizar Historial</button>
+            </div>
+            <div class="tablenav-pages">
+                <span class="displaying-num" x-text="logs.length + ' registros recientes'"></span>
+                <span class="spinner is-active" x-show="loading"></span>
+            </div>
+            <br class="clear">
+        </div>
+
         <table class="wp-list-table widefat fixed striped table-view-list">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Producto</th>
-                    <th>Showroom</th>
-                    <th>Depósito 1</th>
-                    <th>Depósito 2</th>
-                    <th>Control</th>
-                    <th>Stock WC</th>
-                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Producto</th>
                     <th>Acción</th>
+                    <th>Detalles</th>
+                    <th>Revertir</th>
                 </tr>
             </thead>
             <tbody>
-                <template x-for="item in filteredItems" :key="item.product_id">
-                    <tr :class="isItemDiscrepancy(item) ? 'dsm-row-warning' : ''">
-                        <td x-text="'#' + item.product_id + ' - ' + item.post_title"></td>
-                        
-                        <!-- Stock Showroom -->
+                <template x-for="log in logs" :key="log.id">
+                    <tr>
+                        <td x-text="log.date_created"></td>
+                        <td x-text="log.user_name || 'Sistema'"></td>
+                        <td x-text="log.product_name || ('ID: ' + log.product_id)"></td>
                         <td>
-                            <input type="number" x-model.number="item.stock_local" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
+                            <span class="badg" 
+                                  :style="log.action_type === 'edit' ? 'background:#2271b1; color:white; padding:2px 6px; border-radius:4px;' : 
+                                         (log.action_type === 'transfer' ? 'background:#dba617; color:white; padding:2px 6px; border-radius:4px;' : 
+                                         'background:#666; color:white; padding:2px 6px; border-radius:4px;')"
+                                  x-text="log.action_type.toUpperCase()">
+                            </span>
                         </td>
-                        
-                        <!-- Stock Depo 1 -->
+                        <td x-text="log.details"></td>
                         <td>
-                            <input type="number" x-model.number="item.stock_deposito_1" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
-                        </td>
-                        
-                        <!-- Stock Depo 2 -->
-                        <td>
-                            <input type="number" x-model.number="item.stock_deposito_2" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
-                        </td>
-                        
-                        <!-- Calculated Total (Reactive) -->
-                        <td>
-                            <strong x-text="calculateTotal(item)"></strong>
-                        </td>
-                        
-                        <td x-text="item.wc_stock"></td> 
-                        
-                        <td>
-                            <span x-show="isItemDiscrepancy(item)" class="dashicons dashicons-warning" style="color:red" title="Discrepancia: Total Plugin no coincide con WC"></span>
-                            <span x-show="!isItemDiscrepancy(item)" class="dashicons dashicons-yes" style="color:green" title="Correcto"></span>
-                            
-                            <!-- Saving Indicator -->
-                            <span x-show="item.isSaving" class="spinner is-active" style="float:none; margin:0;"></span>
-                        </td>
-                        
-                        <td>
-                            <!-- Fix Discrepancy Action -->
-                            <div style="display: flex; gap: 5px;">
-                                <div x-show="isItemDiscrepancy(item)">
-                                    <button class="button button-small" @click="fixSingle(item)" title="Corregir Stock en WC">Corregir WC</button>
-                                </div>
-                                <button class="button button-small" @click="openTransferModal(item)" title="Transferir Stock">
-                                    <span class="dashicons dashicons-randomize" style="margin-top:2px;"></span>
-                                </button>
-                            </div>
+                            <button class="button button-small" @click="revertLog(log.id)" title="Deshacer este cambio">Deshacer</button>
                         </td>
                     </tr>
                 </template>
-                <tr x-show="items.length === 0">
-                    <td colspan="8">
-                        No se encontraron productos. <span x-show="!searchQuery && !selectedCategory">Prueba hacer clic en "Sincronizar Productos de WC" para importar tu catálogo.</span>
-                    </td>
+                <tr x-show="logs.length === 0">
+                    <td colspan="6">No hay registros de cambios recientes.</td>
                 </tr>
             </tbody>
         </table>
@@ -180,123 +254,20 @@
     </div>
 </div>
 
-<style>
-    /* Modal Styles */
-    .dsm-modal-overlay {
-        position: fixed;
-        top: 0; 
-        left: 0; 
-        width: 100%; 
-        height: 100%; 
-        background: rgba(0, 0, 0, 0.6); 
-        backdrop-filter: blur(2px);
-        z-index: 10000; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
-    }
 
-    .dsm-modal-content {
-        background: #fff;
-        width: 450px;
-        max-width: 90%;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        animation: dsm-modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .dsm-modal-header {
-        padding: 15px 20px;
-        background: #f0f0f1;
-        border-bottom: 1px solid #c3c4c7;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .dsm-modal-header h2 {
-        margin: 0;
-        font-size: 1.2rem;
-        color: #1d2327;
-    }
-    
-    .dsm-close-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #646970;
-        line-height: 1;
-    }
-    
-    .dsm-close-btn:hover {
-        color: #d63638;
-    }
-
-    .dsm-modal-body {
-        padding: 20px;
-    }
-    
-    .dsm-form-group {
-        margin-bottom: 20px;
-    }
-    
-    .dsm-form-group label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #2c3338;
-    }
-    
-    .dsm-modal-footer {
-        padding: 15px 20px;
-        background: #f6f7f7;
-        border-top: 1px solid #c3c4c7;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-    }
-
-    @keyframes dsm-modal-pop {
-        0% { transform: scale(0.9); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Spreadsheet-like input styling */
-    .dsm-stock-table-container input[type=number].dsm-live-edit {
-        background: transparent;
-        border: 1px solid transparent;
-        width: 100%;
-        max-width: 80px;
-        padding: 5px;
-        transition: all 0.2s;
-    }
-    .dsm-stock-table-container input[type=number].dsm-live-edit:hover,
-    .dsm-stock-table-container input[type=number].dsm-live-edit:focus {
-        background: #fff;
-        border-color: #8c8f94;
-        box-shadow: 0 0 0 1px #8c8f94;
-    }
-    
-    /* Vertical Alignment Fix */
-    .dsm-stock-table-container table td, 
-    .dsm-stock-table-container table th {
-        vertical-align: middle !important;
-    }
-</style>
 
 <script>
 function dsmDashboard() {
     return {
+        activeTab: 'inventory',
         items: [],
         categories: (typeof dsm_params !== 'undefined' && dsm_params.categories) ? dsm_params.categories : [],
-        showOnlyDiscrepancies: false,
+        showDiscrepanciesOnly: false,
         searchQuery: '',
         selectedCategory: '',
         isSyncing: false,
+        loading: false,
+        errorMsg: '',
         stats: { total: 0, discrepancies: 0 },
         
         // Transfer Modal State
@@ -315,42 +286,124 @@ function dsmDashboard() {
         init() {
             if (typeof dsm_params === 'undefined') {
                 console.error("DSM Error: dsm_params is not defined!");
+                this.errorMsg = "dsm_params undefined";
                 alert("Error crítico: No se pudo cargar la configuración del plugin (dsm_params missing). Revisa la consola.");
                 return;
             }
             console.log("DSM Init", dsm_params);
             this.fetchInventory();
+            this.fetchLogSummary();
         },
 
-        fetchInventory() {
-            let url = dsm_params.root + 'inventory';
-            let params = new URLSearchParams();
-
-            if (this.searchQuery) {
-                params.append('search', this.searchQuery);
+        switchTab(tab) {
+            this.activeTab = tab;
+            if (tab === 'history') {
+                this.fetchLogs();
             }
-            if (this.selectedCategory) {
-                params.append('category', this.selectedCategory);
-            }
+        },
+        
+        // ... (fetchLogSummary and fetchLogs omitted for brevity if unchanged) ...
 
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
-
-            fetch(url, {
+        fetchLogSummary() {
+            fetch(dsm_params.root + 'logs/summary', {
                 headers: { 'X-WP-Nonce': dsm_params.nonce }
             })
             .then(r => r.json())
             .then(data => {
-                this.items = data.map(i => ({
-                    ...i,
-                    stock_local: parseInt(i.stock_local) || 0,
-                    stock_deposito_1: parseInt(i.stock_deposito_1) || 0,
-                    stock_deposito_2: parseInt(i.stock_deposito_2) || 0,
-                    wc_stock: parseInt(i.wc_stock) || 0,
-                    isSaving: false 
-                }));
-                this.calculateStats();
+                if(data.success) {
+                    this.logSummary = data.data;
+                }
+            })
+            .catch(e => console.error(e));
+        },
+        
+        fetchLogs() {
+            this.loading = true;
+            fetch(dsm_params.root + 'logs', {
+                headers: { 'X-WP-Nonce': dsm_params.nonce }
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.loading = false;
+                if(data.success) {
+                    this.logs = data.data;
+                }
+            })
+            .catch(e => {
+                this.loading = false; 
+                console.error(e);
+            });
+        },
+        
+        revertLog(logId) {
+            if(!confirm('¿Estás seguro de revertir esta acción?')) return;
+            
+            fetch(dsm_params.root + 'logs/revert', {
+                method: 'POST',
+                headers: { 
+                    'X-WP-Nonce': dsm_params.nonce,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ log_id: logId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Acción revertida exitosamente.');
+                    this.fetchLogs();
+                    this.fetchLogSummary();
+                    this.fetchInventory(); 
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(e => alert('Error revert: ' + e));
+        },
+        
+        fetchInventory() {
+            let url = dsm_params.root + 'inventory';
+            let params = new URLSearchParams();
+
+            if (this.searchQuery) params.append('search', this.searchQuery);
+            if (this.selectedCategory) params.append('category', this.selectedCategory);
+            if (params.toString()) url += '?' + params.toString();
+
+            console.log("DSM: Fetching inventory from " + url);
+            this.loading = true; 
+            this.errorMsg = '';
+
+            fetch(url, { headers: { 'X-WP-Nonce': dsm_params.nonce } })
+            .then(r => r.json())
+            .then(data => {
+                this.loading = false;
+                console.log("DSM: Inventory Data", data);
+                
+                if (!Array.isArray(data)) {
+                    this.errorMsg = "API Response invalid (not array)";
+                    console.error("DSM Error: Expected array but got", data);
+                    this.items = [];
+                    return;
+                }
+
+                try {
+                    this.items = data.map(i => ({
+                        ...i,
+                        stock_local: parseInt(i.stock_local) || 0,
+                        stock_deposito_1: parseInt(i.stock_deposito_1) || 0,
+                        stock_deposito_2: parseInt(i.stock_deposito_2) || 0,
+                        wc_stock: parseInt(i.wc_stock) || 0,
+                        isSaving: false 
+                    }));
+                    this.calculateStats();
+                } catch (e) {
+                    console.error("Mapping Error", e);
+                    this.errorMsg = "Error mapping data: " + e.message;
+                }
+            })
+            .catch(err => {
+                this.loading = false;
+                this.errorMsg = "Fetch Error: " + err.message;
+                console.error("DSM Fetch Error:", err);
             });
         },
         
@@ -383,25 +436,41 @@ function dsmDashboard() {
         },
 
         calculateTotal(item) {
-            return (parseInt(item.stock_local) || 0) + 
-                   (parseInt(item.stock_deposito_1) || 0) + 
-                   (parseInt(item.stock_deposito_2) || 0);
+            if (!item) return 0;
+            try {
+                return (parseInt(item.stock_local) || 0) + 
+                       (parseInt(item.stock_deposito_1) || 0) + 
+                       (parseInt(item.stock_deposito_2) || 0);
+            } catch (e) {
+                console.error("Calc Total Error", e);
+                return 0;
+            }
         },
 
         isItemDiscrepancy(item) {
-            const total = this.calculateTotal(item);
-            return total !== item.wc_stock;
+            if (!item) return false;
+            try {
+                const total = this.calculateTotal(item);
+                return total !== item.wc_stock;
+            } catch (e) {
+                return false;
+            }
         },
 
         get filteredItems() {
+            if (!this.items) return [];
             let list = this.items;
-            if (this.showOnlyDiscrepancies) {
+            if (this.showDiscrepanciesOnly) {
                 list = list.filter(i => this.isItemDiscrepancy(i));
             }
             return list;
         },
 
         calculateStats() {
+            if (!this.items) {
+                 this.stats = { total: 0, discrepancies: 0 };
+                 return;
+            }
             this.stats.total = this.items.length;
             this.stats.discrepancies = this.items.filter(i => this.isItemDiscrepancy(i)).length;
         },
@@ -428,6 +497,10 @@ function dsmDashboard() {
                 item.isSaving = false;
                 if (data.success) {
                     // Success
+                    this.fetchLogSummary();
+                    if (this.activeTab === 'history') {
+                        this.fetchLogs();
+                    }
                 } else {
                     console.error('DSM Save Error:', data);
                     const msg = data.message || 'Error al guardar stock. Compruebe su conexión.';
@@ -531,10 +604,15 @@ function dsmDashboard() {
                 if (data.success) {
                     // Update local model to reflect changes immediately
                     const qty = parseInt(this.transferForm.qty);
-                    this.transferForm.itemRef[this.transferForm.from] -= qty;
                     this.transferForm.itemRef[this.transferForm.to] += qty;
                     
                     this.closeTransferModal();
+                    
+                    this.fetchLogSummary();
+                    if (this.activeTab === 'history') {
+                        this.fetchLogs();
+                    }
+                    
                     // Optional: re-fetch to ensure sync
                     // this.fetchInventory(); 
                 } else {

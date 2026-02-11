@@ -14,7 +14,7 @@
     background: #fff;
     border: 1px solid #ccd0d4;
     padding: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 }
 
 .dsm-card h2 {
@@ -28,4 +28,20 @@
 
 .dsm-stock-table-container {
     overflow-x: auto;
+}
+
+/* Transfer Page Styles */
+.dsm-transfer-card {
+    max-width: 600px;
+    margin-top: 20px;
+}
+
+.dsm-hidden-select {
+    display: none;
+    margin-top: 5px;
+}
+
+.dsm-transfer-message {
+    margin-left: 10px;
+    font-weight: bold;
 }

@@ -1,6 +1,6 @@
 # DualStock Manager
 
-**Version:** 0.2.9
+**Version:** 0.3.0
 **Description:** Omnichannel stock control plugin for WooCommerce. Manages multi-location inventory (Showroom, Deposito 1, Deposito 2) and synchronizes the total with WooCommerce.
 
 ## Core Concepts
@@ -37,6 +37,10 @@
 
 ### 4. Scanner (Audit)
 *   **Audit Mode**: Scan a product barcode to instantly retrieve its status.
+
+### 5. Settings & Cleanup
+*   **Clean Uninstall**: Option to automatically delete all plugin data (tables and settings) upon uninstallation.
+*   Located under **Dual Inventory > Settings**.
 
 ## Installation
 

@@ -3,7 +3,7 @@
  * Plugin Name:       DualStock Manager
  * Plugin URI:        https://dualequipamientos.com
  * Description:       Omnichannel stock control with multi-location internal distribution (Showroom, Deposito 1, Deposito 2).
- * Version:           0.2.9
+ * Version:           0.3.0
  * Author:            Google Deepmind Agent
  * Text Domain:       dualstock-manager
  */
@@ -13,7 +13,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'DSM_VERSION', '0.2.9' );
+define( 'DSM_VERSION', '0.3.0' );
 define( 'DSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DSM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

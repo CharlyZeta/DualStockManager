@@ -36,6 +36,7 @@ class DualStock_Manager {
 	 */
 	private function load_dependencies() {
 		require_once DSM_PLUGIN_DIR . 'includes/class-dsm-admin.php';
+		require_once DSM_PLUGIN_DIR . 'includes/class-dsm-settings.php';
 		require_once DSM_PLUGIN_DIR . 'includes/class-dsm-sync-engine.php';
 		require_once DSM_PLUGIN_DIR . 'includes/class-dsm-api.php';
 	}
@@ -53,6 +54,9 @@ class DualStock_Manager {
 		add_action( 'admin_menu', array( $plugin_admin, 'add_plugin_admin_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $plugin_admin, 'enqueue_styles' ) );
 		add_action( 'admin_enqueue_scripts', array( $plugin_admin, 'enqueue_scripts' ) );
+
+		$plugin_settings = new DSM_Settings( 'dualstock-manager', DSM_VERSION );
+		$plugin_settings->init();
 	}
 
 	/**

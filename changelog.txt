@@ -1,6 +1,11 @@
 
 === Changelog ===
 
+= 0.3.0 =
+*   Feature: Nueva página de Ajustes (Settings).
+*   Feature: Opción de "Desinstalación Limpia" para borrar tablas y datos al eliminar el plugin.
+*   Core: Integración de settings API.
+
 = 0.2.9 =
 *   Fix: Corregido error crítico que impedía visualizar la lista de productos (variable mismatch).
 *   Fix: Solucionado error donde el primer movimiento de stock (creación) no generaba log.

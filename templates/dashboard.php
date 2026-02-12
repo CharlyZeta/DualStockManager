@@ -12,10 +12,10 @@
             <h3>Resumen del Día</h3>
             <div style="display: flex; gap: 15px; margin-bottom: 10px;">
                 <div class="dsm-stat-box">
-                    <span class="badg" style="background:#2271b1; color:white; padding:2px 6px; border-radius:4px;" x-text="logSummary.edit">0</span> Ediciones
+                    <span class="badg" style="background:#2271b1; color:white; padding:2px 6px; border-radius:4px;" x-text="dailyStats.edit">0</span> Ediciones
                 </div>
                 <div class="dsm-stat-box">
-                    <span class="badg" style="background:#dba617; color:white; padding:2px 6px; border-radius:4px;" x-text="logSummary.transfer">0</span> Transferencias
+                    <span class="badg" style="background:#dba617; color:white; padding:2px 6px; border-radius:4px;" x-text="dailyStats.transfer">0</span> Transferencias
                 </div>
             </div>
             
@@ -34,6 +34,7 @@
                 <button class="button button-secondary" @click="startScanner" style="margin-left: 5px;">
                     Iniciar Auditoría (Escáner)
                 </button>
+
                 
                 <div style="margin-top: 10px;">
                     <label>
@@ -149,7 +150,7 @@
                 <button class="button" @click="fetchLogs">Actualizar Historial</button>
             </div>
             <div class="tablenav-pages">
-                <span class="displaying-num" x-text="logs.length + ' registros recientes'"></span>
+                <span class="displaying-num" x-text="historyLogs.length + ' registros recientes'"></span>
                 <span class="spinner is-active" x-show="loading"></span>
             </div>
             <br class="clear">
@@ -158,16 +159,16 @@
         <table class="wp-list-table widefat fixed striped table-view-list">
             <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>Usuario</th>
-                    <th>Producto</th>
-                    <th>Acción</th>
-                    <th>Detalles</th>
-                    <th>Revertir</th>
+                    <th style="width: 12%;">Fecha</th>
+                    <th style="width: 10%;">Usuario</th>
+                    <th style="width: 25%;">Producto</th>
+                    <th style="width: 10%;">Acción</th>
+                    <th style="width: 35%;">Detalles</th>
+                    <th style="width: 8%;">Revertir</th>
                 </tr>
             </thead>
             <tbody>
-                <template x-for="log in logs" :key="log.id">
+                <template x-for="log in historyLogs" :key="log.id">
                     <tr>
                         <td x-text="log.date_created"></td>
                         <td x-text="log.user_name || 'Sistema'"></td>
@@ -181,12 +182,14 @@
                             </span>
                         </td>
                         <td x-text="log.details"></td>
-                        <td>
-                            <button class="button button-small" @click="revertLog(log.id)" title="Deshacer este cambio">Deshacer</button>
+                        <td style="text-align:center;">
+                            <button class="button button-small" @click="revertLog(log.id)" title="Deshacer este cambio">
+                                <span class="dashicons dashicons-undo" style="margin-top:2px;"></span>
+                            </button>
                         </td>
                     </tr>
                 </template>
-                <tr x-show="logs.length === 0">
+                <tr x-show="historyLogs.length === 0">
                     <td colspan="6">No hay registros de cambios recientes.</td>
                 </tr>
             </tbody>
@@ -261,7 +264,7 @@ function dsmDashboard() {
     return {
         activeTab: 'inventory',
         items: [],
-        categories: (typeof dsm_params !== 'undefined' && dsm_params.categories) ? dsm_params.categories : [],
+        categories: [], // Initialized empty, populated in init()
         showDiscrepanciesOnly: false,
         searchQuery: '',
         selectedCategory: '',
@@ -269,6 +272,10 @@ function dsmDashboard() {
         loading: false,
         errorMsg: '',
         stats: { total: 0, discrepancies: 0 },
+        
+        // Renamed to avoid potential collisions and clarify scope
+        dailyStats: { edit: 0, transfer: 0 },
+        historyLogs: [],
         
         // Transfer Modal State
         showTransferModal: false,
@@ -290,6 +297,9 @@ function dsmDashboard() {
                 alert("Error crítico: No se pudo cargar la configuración del plugin (dsm_params missing). Revisa la consola.");
                 return;
             }
+            // Safely load categories after dsm_params check
+            this.categories = dsm_params.categories || [];
+
             console.log("DSM Init", dsm_params);
             this.fetchInventory();
             this.fetchLogSummary();
@@ -302,8 +312,6 @@ function dsmDashboard() {
             }
         },
         
-        // ... (fetchLogSummary and fetchLogs omitted for brevity if unchanged) ...
-
         fetchLogSummary() {
             fetch(dsm_params.root + 'logs/summary', {
                 headers: { 'X-WP-Nonce': dsm_params.nonce }
@@ -311,7 +319,7 @@ function dsmDashboard() {
             .then(r => r.json())
             .then(data => {
                 if(data.success) {
-                    this.logSummary = data.data;
+                    this.dailyStats = data.data; // Use renamed property
                 }
             })
             .catch(e => console.error(e));
@@ -326,7 +334,10 @@ function dsmDashboard() {
             .then(data => {
                 this.loading = false;
                 if(data.success) {
-                    this.logs = data.data;
+                    this.historyLogs = [...data.data];
+                    console.log("DSM Logs Loaded:", this.historyLogs.length);
+                } else {
+                    console.error("DSM Log Error:", data.message);
                 }
             })
             .catch(e => {
@@ -503,11 +514,8 @@ function dsmDashboard() {
                     }
                 } else {
                     console.error('DSM Save Error:', data);
-                    const msg = data.message || 'Error al guardar stock. Compruebe su conexión.';
                     if (data.code === 'rest_cookie_invalid_nonce') {
                         alert('La sesión ha expirado. Por favor, recarga la página.');
-                    } else {
-                        alert(msg);
                     }
                 }
             })
@@ -605,6 +613,7 @@ function dsmDashboard() {
                     // Update local model to reflect changes immediately
                     const qty = parseInt(this.transferForm.qty);
                     this.transferForm.itemRef[this.transferForm.to] += qty;
+                    this.transferForm.itemRef[this.transferForm.from] -= qty; // Deduct from source
                     
                     this.closeTransferModal();
                     
@@ -622,9 +631,31 @@ function dsmDashboard() {
             .catch(err => {
                 this.isTransferring = false;
                 console.error(err);
-                alert('Error de conexión.');
+                alert('Error: ' + err); // More descriptive error
             });
+        },
+        
+        runDebugDB() {
+            if(!confirm('¿Ejecutar diagnóstico de base de datos?')) return;
+            
+            fetch(dsm_params.root + 'debug-db', {
+                headers: { 'X-WP-Nonce': dsm_params.nonce }
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('Debug DB:', data);
+                let msg = "Estado de la Tabla de Logs:\n";
+                msg += "Existe: " + (data.table_exists ? "SÍ" : "NO") + "\n";
+                if(data.table_exists) {
+                    msg += "Filas: " + data.row_count + "\n";
+                    msg += "Prueba de Inserción: " + (data.insert_test_success ? "EXITOSA" : "FALLIDA") + "\n";
+                    if(!data.insert_test_success) msg += "Error: " + data.insert_test_error + "\n";
+                }
+                alert(msg);
+            })
+            .catch(e => alert("Error de conexión: " + e));
         }
     }
 }
 </script>
+```

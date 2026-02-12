@@ -160,11 +160,9 @@ class DSM_Sync_Engine {
         $exists = $wpdb->get_var( $wpdb->prepare( "SELECT product_id FROM $table_name WHERE product_id = %d", $product_id ) );
 
         if ( ! $exists ) {
-             // If not found, we should insert it now instead of erroring.
-             // This handles the case where user sees products in the list (joined from posts table)
-             // but they haven't been imported to dual_inventory yet.
+             // If not found, insert.
              $inserted = $wpdb->insert(
-                $table_name,
+                $table_logs = $table_name, // Fix variable usage if needed, wait $table_name is defined above
                 array(
                     'product_id'       => $product_id,
                     'stock_local'      => $local,
@@ -179,27 +177,28 @@ class DSM_Sync_Engine {
                 return new WP_Error( 'db_insert_error', 'Could not insert new stock record.' );
             }
             
-            return true;
-        }
-
-        // Capture previous state
-        $prev_state = $this->get_product_stock_state( $product_id );
-
-        $updated = $wpdb->update(
-            $table_name,
-            array(
-                'stock_local'      => $local,
-                'stock_deposito_1' => $dep1,
-                'stock_deposito_2' => $dep2,
-                'audit_status'     => 'pending' // Mark as pending audit/sync
-            ),
-            array( 'product_id' => $product_id ),
-            array( '%d', '%d', '%d', '%s' ),
-            array( '%d' )
-        );
-
-        if ( $updated === false ) {
-            return new WP_Error( 'db_error', 'Could not update database.' );
+            // Log creation
+             $prev_state = array( 'stock_local' => 0, 'stock_deposito_1' => 0, 'stock_deposito_2' => 0 );
+        } else {
+            // Capture previous state
+            $prev_state = $this->get_product_stock_state( $product_id );
+    
+            $updated = $wpdb->update(
+                $table_name,
+                array(
+                    'stock_local'      => $local,
+                    'stock_deposito_1' => $dep1,
+                    'stock_deposito_2' => $dep2,
+                    'audit_status'     => 'pending'
+                ),
+                array( 'product_id' => $product_id ),
+                array( '%d', '%d', '%d', '%s' ),
+                array( '%d' )
+            );
+    
+            if ( $updated === false ) {
+                return new WP_Error( 'db_error', 'Could not update database.' );
+            }
         }
         
         // Log Transaction
@@ -209,9 +208,9 @@ class DSM_Sync_Engine {
             'stock_deposito_2' => $dep2
         );
         
-        $this->log_transaction( $product_id, 'edit', 'Manual stock update via Dashboard', $prev_state, $new_state );
+        $log_id = $this->log_transaction( $product_id, 'edit', 'Manual stock update via Dashboard', $prev_state, $new_state );
 
-        return true;
+        return array( 'success' => true, 'log_id' => $log_id );
     }
 
     /**
@@ -233,7 +232,7 @@ class DSM_Sync_Engine {
         
         $user_id = get_current_user_id();
         
-        $wpdb->insert(
+        $result = $wpdb->insert(
             $table_logs,
             array(
                 'date_created'   => current_time( 'mysql' ),
@@ -246,6 +245,8 @@ class DSM_Sync_Engine {
             ),
             array( '%s', '%d', '%d', '%s', '%s', '%s', '%s' )
         );
+        
+        return $result ? $wpdb->insert_id : false;
     }
     
     /**

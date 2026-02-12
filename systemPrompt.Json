@@ -1,60 +1,68 @@
 {
   "project_name": "DualStock_Manager",
-  "version": "0.1.0",
+  "version": "0.2.9",
   "context": {
     "business_name": "Dual Equipamientos",
     "environment": "WordPress/WooCommerce Ecosystem",
-    "architecture": "Custom PHP/JS PWA (No external dependencies)",
-    "goal": "Omnichannel stock control with multi-location internal distribution and enhanced product metadata."
+    "architecture": "Hybrid: PHP Backend (REST API) + Alpine.js Frontend (SPA-like Dashboard)",
+    "goal": "Omnichannel stock control with multi-location internal distribution, audit trails, and manual WC synchronization."
   },
   "technical_stack": {
     "backend": [
       "PHP (WordPress Core/wpdb)",
-      "REST API (Custom Endpoints)"
+      "REST API (Custom Endpoints under /wp-json/dsm/v1/)",
+      "Sync Engine (Class-based logic)"
     ],
     "frontend": [
-      "Tailwind CSS",
-      "Vanilla JS / Alpine.js",
+      "Alpine.js (Reactive UI, Modals, Async Fetch)",
+      "Vanilla CSS (Custom admin-dashboard.css)",
       "HTML5 QR Code Scanner"
     ],
-    "database": "MySQL (Custom tables within WP database)"
+    "database": [
+      "wp_dual_inventory (Master Stock Table)",
+      "wp_dual_inventory_logs (Transaction History)"
+    ]
   },
   "database_schema": {
-    "table_name": "wp_dual_inventory",
-    "columns": {
-      "product_id": "BIGINT(20) UNSIGNED PRIMARY KEY (Relates to wp_posts.ID)",
+    "wp_dual_inventory": {
+      "product_id": "BIGINT(20) UNSIGNED PRIMARY KEY",
       "stock_local": "INT DEFAULT 0 (Showroom)",
       "stock_deposito_1": "INT DEFAULT 0",
       "stock_deposito_2": "INT DEFAULT 0",
-      "box_dimensions": "VARCHAR(100) (Format: LxWxH)",
-      "weight_kg": "DECIMAL(10,2)",
-      "last_audit_date": "DATETIME",
-      "audit_status": "ENUM('match', 'discrepancy', 'pending')"
+      "wc_stock": "INT (Cached copy of WC stock for comparison)",
+      "last_audit_date": "DATETIME"
+    },
+    "wp_dual_inventory_logs": {
+      "id": "BIGINT UNSIGNED AUTO_INCREMENT",
+      "date_created": "DATETIME",
+      "user_id": "BIGINT UNSIGNED",
+      "product_id": "BIGINT UNSIGNED",
+      "action_type": "VARCHAR(20) (edit, transfer, sync, revert)",
+      "previous_state": "JSON (Snapshot of stocks before)",
+      "new_state": "JSON (Snapshot of stocks after)",
+      "details": "TEXT (Human readable description)"
     }
   },
   "business_logic_rules": {
-    "inventory_sum_consistency": "Total_WooCommerce = stock_local + stock_deposito_1 + stock_deposito_2",
-    "write_strategy": "Every change in sub-locations must trigger a 'update_post_meta(id, '_stock', total)'",
-    "pos_integration": "Listen to WooCommerce order hooks to subtract from 'stock_local' by default",
-    "returns_workflow": "Manual input triggers: 1. Update sub-location + 2. Increment WC Total + 3. Log movement",
-    "scanning": "Camera-based barcode scanning (EAN-13/SKU) must identify product_id or variation_id"
+    "inventory_identity": "Plugin Total = stock_local + stock_deposito_1 + stock_deposito_2",
+    "discrepancy_handling": "Manual 'Fix WC' push. No automatic overwrite of WC on order placement.",
+    "logging_policy": "ALL state changes must be logged. Reverts are also logged as new actions (type: revert).",
+    "frontend_architecture": "Dashboard loads empty structure, then fetches JSON. 'History' tab uses lazy loading.",
+    "security": "All API endpoints protected by Nonce ('wp_rest') and Capability ('manage_options')."
   },
   "functional_modules": {
-    "dashboard": "Filter by Category/Attributes. Highlight products with audit_status != 'match'",
-    "location_manager": "Interface to transfer stock between Local <-> Depo1 <-> Galpon2 without affecting WC Total",
-    "product_enlarger": "Form to add shipping dimensions and technical data not present in standard WC",
-    "audit_mode": "Mobile-optimized 'Blind Count' scanner to verify physical vs digital stock"
+    "dashboard": "Spreadsheet-like inline editing with AJAX autosave.",
+    "transfer_modal": "Inline modal to move stock between locations. Validates source availability.",
+    "history_log": "Tabular view of log entries with 'Undo' capability.",
+    "audit_scanner": "Mobile-optimized QR/Barcode scanner for quick status checks.",
+    "shortcode": "[dualstock_manager] allows frontend access for authorized users."
   },
-  "ui_ux_requirements": {
-    "design": "Mobile-first, high contrast for warehouse lighting",
-    "navigation": "Quick-action floating button for scanner",
-    "feedback": "Real-time sync status indicators (Green/Red icon)"
-  },
-  "implementation_roadmap": [
-    "Step 1: Create custom DB table and register WP-Admin menu",
-    "Step 2: Build PHP Class for Stock Synchronization (SyncEngine)",
-    "Step 3: Implement QR/Barcode Scanner interface using HTML5-QRCode",
-    "Step 4: Develop the 'Difference Resolver' view with attribute filters",
-    "Step 5: Integrate box-dimension fields into the warehouse UI"
+  "implementation_status": [
+    "DONE: Custom DB Tables (Inventory + Logs)",
+    "DONE: Sync Engine & API (Inventory, Transfer, Fix-WC, Logs)",
+    "DONE: Dashboard UI (Alpine.js, CSS Grid/Flex)",
+    "DONE: Stock Transfer Logic (Inline Modal)",
+    "DONE: History & Revert Logic",
+    "DONE: Scanner Integration (html5-qrcode)"
   ]
 }

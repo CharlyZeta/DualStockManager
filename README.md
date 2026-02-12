@@ -1,6 +1,6 @@
 # DualStock Manager
 
-**Version:** 0.2.1
+**Version:** 0.2.9
 **Description:** Omnichannel stock control plugin for WooCommerce. Manages multi-location inventory (Showroom, Deposito 1, Deposito 2) and synchronizes the total with WooCommerce.
 
 ## Core Concepts
@@ -10,32 +10,39 @@
     *   **Showroom (Local)**: Stock available for immediate sale/pickup.
     *   **Deposito 1**: Warehouse 1.
     *   **Deposito 2**: Warehouse 2.
-3.  **Discrepancy Model**: The plugin does *not* automatically deduct from specific locations when a WooCommerce order is placed. Instead, it lets WooCommerce reduce its own stock, creating a "Discrepancy" (Mismatch) vs the Plugin Total. The store manager then audits the shelf and uses the Plugin Dashboard to "Fix WC" (push actual physical count to WC) or manually adjusts the physical location count if the item was shipped.
+3.  **Discrepancy Model**: The plugin tracks the difference between its total and WooCommerce's stock. It allows for manual "Push" synchronization to fix these discrepancies without automatic interference during order placement (user preference).
 
 ## Features
 
-### 1. Dashboard
-*   **Overview**: View stock across all 3 locations + Total + WC Stock.
-*   **Discrepancy Alert**: Rows are highlighted in red/orange if `Total Plugin Stock != WC Stock`.
-*   **Fix Button**: A "Fix WC" button updates WooCommerce stock to match the Plugin's total immediately.
-*   **Alpine.js**: Built with local Alpine.js for a fast, reactive interface.
+### 1. Dashboard & Spreadsheet Editing
+*   **Live Editing**: Direct "Spreadsheet-style" editing of stock numbers in the dashboard. Changes are saved automatically via AJAX.
+*   **Real-time Calculations**: Total stock and discrepancies are recalculated instantly as you type.
+*   **Visual Feedback**:
+    *   **Green/Red Indicators**: Instantly see if Plugin Total matches WooCommerce.
+    *   **Saving Spinners**: Visual confirmation when data is being written to the DB.
+*   **Alpine.js**: Reactive, lag-free interface.
 
 ### 2. Stock Transfer
-*   **Transfer UI**: Dedicated page to move items between Deposito 1, Deposito 2, and Showroom.
-*   **Validation**: Prevents transfers if source location has insufficient stock.
-*   **Product Search**: Integrated search bar to find products by name or ID.
-*   Located under **Dual Inventory > Transfer Stock**.
+*   **Inline Transfers**: "Transfer" button on every row to move stock between locations (e.g., Deposito 1 -> Showroom).
+*   **Smart Validation**: Prevents negative stock; ensures source and destination are different.
+*   **Logging**: Every transfer is recorded in the history log.
 
-### 3. Scanner (Audit)
-*   Integrates `html5-qrcode` for barcode scanning.
-*   **Audit Mode**: Scan a product barcode to instantly retrieve its status across all locations.
-*   **Real-time Lookup**: Uses the API to fetch product details immediately upon scan.
+### 3. History & Logs (Audit Trail)
+*   **Complete History**: A dedicated "Historial de Cambios" tab tracks EVERY change.
+    *   **Who**: User who made the change.
+    *   **What**: Product and strict before/after values.
+    *   **When**: Exact timestamp.
+*   **Revert Capability**: Undo any action (Edit or Transfer) with a single click.
+*   **Daily Stats**: Quick summary of today's edits and transfers.
+
+### 4. Scanner (Audit)
+*   **Audit Mode**: Scan a product barcode to instantly retrieve its status.
 
 ## Installation
 
 1.  Upload the `dualstock-manager` folder to `/wp-content/plugins/`.
 2.  Activate via WordPress Admin.
-3.  Upon activation, the `wp_dual_inventory` table is created.
+3.  Tables `wp_dual_inventory` and `wp_dual_inventory_logs` are created automatically.
 
 ## Developer API
 
@@ -43,33 +50,33 @@
 
 #### `GET /inventory`
 Returns list of products with stock breakdown.
-*   **Params**: `?search=query` (Optional: Filter by product name)
-*   **Response**: `[{ product_id, stock_local, stock_deposito_1, stock_deposito_2, plugin_total, wc_stock, is_discrepancy }, ...]`
+
+#### `POST /inventory/update` (Spreadsheet Save)
+Updates stock for a single product.
+*   **Params**: `product_id`, `stock_local`, `stock_deposito_1`, `stock_deposito_2`
+*   **Returns**: Success status and new `log_id`.
 
 #### `POST /transfer`
 Move stock between locations.
-*   **Params**:
-    *   `product_id` (int)
-    *   `from` (string: `stock_local` | `stock_deposito_1` | `stock_deposito_2`)
-    *   `to` (string: same as above)
-    *   `qty` (int)
+*   **Params**: `product_id`, `from`, `to`, `qty`
 
-#### `POST /fix-wc`
-Force WooCommerce stock to match Plugin total.
-*   **Params**:
-    *   `product_ids` (array of ints)
+#### `GET /logs`
+Retrieve recent activity logs.
+
+#### `POST /logs/revert`
+Undo a specific transaction by ID.
 
 ## Directory Structure
 ```
 dualstock-manager/
-├── assets/             # CSS, JS, and Vendor libs (Alpine, HTML5-QRCode)
+├── assets/             # CSS (admin-dashboard.css), JS, and Vendor libs
 ├── includes/           # PHP Classes (Admin, API, Sync Engine)
 ├── templates/          # View files (Dashboard, Transfer)
 └── dualstock-manager.php # Main entry point
 ```
 
 ## Changelog
-*   **0.2.1**: Improved Search API, Fix html5-qrcode integration.
-*   **0.2.0**: Added UI for transfers and Scanner.
-*   **0.1.1**: Added Stock Transfer UI, Scanner integration, and Transfer API. Removed automatic order hooks.
-*   **0.1.0**: Initial Release. Sync Engine, Custom DB Table, Dashboard.
+*   **0.2.9**: System Logs & Revert (Backend/Frontend), UI Polish, Bug Fixes.
+*   **0.2.8**: Spreadsheet Editing, Frontend Shortcode.
+*   **0.2.0**: Transfer UI, Scanner.
+*   **0.1.0**: Initial Release.

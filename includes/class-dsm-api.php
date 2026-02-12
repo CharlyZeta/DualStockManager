@@ -64,6 +64,7 @@ class DSM_API {
             'callback'            => array( $this, 'get_log_summary' ),
             'permission_callback' => array( $this, 'permissions_check' ),
         ) );
+
 	}
 
 	public function permissions_check() {
@@ -222,7 +223,8 @@ class DSM_API {
 
 		return new WP_REST_Response( array( 
 			'success' => true,
-			'message' => 'Stock updated locally. WC discrepancy may occur.'
+			'message' => 'Stock updated locally. WC discrepancy may occur.',
+            'log_id'  => isset($result['log_id']) ? $result['log_id'] : 0
 		), 200 );
 	}
     
@@ -232,6 +234,15 @@ class DSM_API {
     public function get_logs( $request ) {
         global $wpdb;
         $table_logs = $wpdb->prefix . 'dual_inventory_logs';
+        
+        // Debug: Check table existence
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_logs'") != $table_logs) {
+            return new WP_REST_Response( array( 
+                'success' => false, 
+                'message' => "Error Crítico: La tabla de logs ($table_logs) no existe en la base de datos by DSM API." 
+            ), 200 ); // Return 200 so frontend handles it gracefully
+        }
+
         $posts_table = $wpdb->prefix . 'posts';
         $users_table = $wpdb->prefix . 'users';
         
@@ -292,4 +303,6 @@ class DSM_API {
         
         return new WP_REST_Response( array( 'success' => true, 'data' => $summary ), 200 );
     }
+
+
 }

@@ -28,15 +28,7 @@ class DSM_Admin {
 			array( $this, 'display_plugin_dashboard' )
 		);
 
-		// Transfer submenu
-		add_submenu_page(
-			'dualstock-manager',
-			'Transferir Stock',
-			'Transferir Stock',
-			'manage_options',
-			'dsm-transfer',
-			array( $this, 'display_transfer_page' )
-		);
+
 	}
 
 	/**
@@ -44,10 +36,6 @@ class DSM_Admin {
 	 */
 	public function display_plugin_dashboard() {
 		require_once DSM_PLUGIN_DIR . 'templates/dashboard.php';
-	}
-
-	public function display_transfer_page() {
-		require_once DSM_PLUGIN_DIR . 'templates/transfer.php';
 	}
 
 	/**
@@ -75,15 +63,6 @@ class DSM_Admin {
             wp_enqueue_script( 'html5-qrcode', DSM_PLUGIN_URL . 'assets/js/vendor/html5-qrcode.min.js', array(), '2.3.8', true );
             wp_enqueue_script( 'dsm-scanner', DSM_PLUGIN_URL . 'assets/js/scanner.js', array( 'jquery', 'html5-qrcode' ), DSM_VERSION, true );
         }
-        
-        // Enqueue Transfer Script if on the transfer page
-		if ( isset( $_GET['page'] ) && 'dsm-transfer' === $_GET['page'] ) {
-			wp_enqueue_script( 'dsm-transfer-script', DSM_PLUGIN_URL . 'assets/js/admin-transfer.js', array( 'jquery' ), DSM_VERSION, true );
-			wp_localize_script( 'dsm-transfer-script', 'dsm_params', array(
-				'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
-				'nonce'     => wp_create_nonce( 'wp_rest' ),
-			));
-		}
 
         // Get categories for Dashboard filter
         $categories = get_terms( array(
@@ -104,7 +83,12 @@ class DSM_Admin {
 			'root'      => esc_url_raw( rest_url( 'dsm/v1/' ) ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
             'ajax_url'  => admin_url( 'admin-ajax.php' ),
-            'categories'=> $cat_list
+            'categories'=> $cat_list,
+            'labels'    => array(
+                'local' => get_option( 'dsm_label_local', 'Showroom' ),
+                'dep1'  => get_option( 'dsm_label_dep1', 'Depósito 1' ),
+                'dep2'  => get_option( 'dsm_label_dep2', 'Depósito 2' )
+            )
 		));
 	}
 }

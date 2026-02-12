@@ -153,3 +153,232 @@
     white-space: nowrap;
     vertical-align: baseline;
 }
+
+/* Print Styles */
+.dsm-print-header,
+.dsm-print-footer {
+    display: none;
+}
+
+@media print {
+
+    /* Hide Admin Interface */
+    #adminmenumain,
+    #wpadminbar,
+    #adminmenuwrap,
+    #wpfooter,
+    .update-nag,
+    .notice,
+    #screen-meta-links {
+        display: none !important;
+    }
+
+    /* Hide Dashboard Elements not needed for report */
+    .dsm-filters,
+    .dsm-tab-nav,
+    .tablenav,
+    .page-title-action,
+    .dsm-actions button,
+    .dsm-dashboard-widgets,
+    .dsm-toolbar {
+        display: none !important;
+    }
+
+    /* Hide Action Columns - Aggressive */
+    th.dsm-col-actions,
+    td.dsm-col-actions,
+    th:last-child,
+    td:last-child {
+        display: none !important;
+    }
+
+    /* Force Status Column Visibility */
+    th.dsm-col-status,
+    td.dsm-col-status {
+        display: table-cell !important;
+        width: 1% !important;
+        /* Min width */
+        white-space: nowrap !important;
+        text-align: center !important;
+        background-color: transparent !important;
+    }
+
+    /* Ensure Icon is visible, but respect Alpine x-show (display: none) */
+    td.dsm-col-status .dashicons {
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 20px !important;
+        color: #000 !important;
+        /* Ensure icons are black or dark for print */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Layout Reset & Scrollbar Removal */
+    html,
+    body {
+        background: #fff !important;
+        height: auto !important;
+        overflow: visible !important;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    /* Reset WordPress structural containers */
+    #wpcontent,
+    #wpbody-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .wrap,
+    .dsm-wrap,
+    .dsm-stock-table-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* Table Styling */
+    .wp-list-table {
+        border: 1px solid #ddd !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        /* Force fixed layout */
+        margin-top: 20px;
+    }
+
+    /* Column Width Optimization */
+    .wp-list-table th,
+    .wp-list-table td {
+        white-space: nowrap !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Maximize Product Column - 45% */
+    .dsm-col-product {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        width: 45% !important;
+        max-width: 45% !important;
+        text-align: left !important;
+    }
+
+    /* Minimize other columns explicitly - 5 data cols * 9% = 45% */
+    .dsm-col-stock-local,
+    .dsm-col-stock-dep1,
+    .dsm-col-stock-dep2,
+    .dsm-col-total,
+    .dsm-col-wc {
+        width: 9% !important;
+        text-align: center !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+    }
+
+    /* Status Column - Remaining ~10% */
+    .dsm-col-status {
+        width: 5% !important;
+        text-align: center !important;
+    }
+
+    .wp-list-table th {
+        background-color: #f9f9f9 !important;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 10px !important;
+        border-bottom: 2px solid #000 !important;
+        padding: 8px !important;
+        color: #000 !important;
+    }
+
+    .wp-list-table td {
+        border-bottom: 1px solid #ddd !important;
+        color: #000 !important;
+        padding: 6px !important;
+        font-size: 10px !important;
+        vertical-align: middle;
+    }
+
+    /* Inputs as Text */
+    input[type=number].dsm-live-edit {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-weight: normal;
+        color: #000 !important;
+        text-align: center;
+        width: auto !important;
+        max-width: none !important;
+        -moz-appearance: textfield;
+        appearance: textfield;
+        /* Remove spinner in FF */
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+
+    /* Discrepancy Highlighting - Subtle */
+    tr {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    tr.dsm-discrepancy {
+        background-color: #fff0f0 !important;
+    }
+
+    /* Very light red */
+    tr.dsm-discrepancy td {
+        font-weight: bold;
+    }
+
+    /* Print Header */
+    .dsm-print-header {
+        display: block !important;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 20px;
+    }
+
+    .dsm-print-header h1 {
+        font-size: 24px;
+        margin: 0 0 10px 0;
+        color: #000;
+        text-align: left;
+    }
+
+    .dsm-print-summary {
+        display: flex;
+        gap: 40px;
+        font-size: 12px;
+    }
+
+    .dsm-print-summary p {
+        margin: 0;
+    }
+
+    /* Print Footer */
+    .dsm-print-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 9px;
+        color: #666;
+        border-top: 1px solid #ddd;
+        padding-top: 5px;
+    }
+}

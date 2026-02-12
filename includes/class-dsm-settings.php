@@ -32,6 +32,9 @@ class DSM_Settings {
 
     public function register_settings() {
         register_setting( 'dsm_settings_group', $this->option_name );
+        register_setting( 'dsm_settings_group', 'dsm_label_local' );
+        register_setting( 'dsm_settings_group', 'dsm_label_dep1' );
+        register_setting( 'dsm_settings_group', 'dsm_label_dep2' );
     }
 
     public function render_settings_page() {
@@ -44,6 +47,28 @@ class DSM_Settings {
                 do_settings_sections( 'dsm_settings_group' );
                 ?>
                 <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">Nombres de Almacenes</th>
+                        <td>
+                            <fieldset>
+                                <legend class="screen-reader-text"><span>Nombres de Almacenes</span></legend>
+                                <label for="dsm_label_local">
+                                    <input type="text" name="dsm_label_local" id="dsm_label_local" value="<?php echo esc_attr( get_option( 'dsm_label_local', 'Showroom' ) ); ?>" class="regular-text" placeholder="Showroom" />
+                                    <span class="description">Nombre para Local/Showroom</span>
+                                </label>
+                                <br>
+                                <label for="dsm_label_dep1">
+                                    <input type="text" name="dsm_label_dep1" id="dsm_label_dep1" value="<?php echo esc_attr( get_option( 'dsm_label_dep1', 'Depósito 1' ) ); ?>" class="regular-text" placeholder="Depósito 1" />
+                                    <span class="description">Nombre para Depósito 1</span>
+                                </label>
+                                <br>
+                                <label for="dsm_label_dep2">
+                                    <input type="text" name="dsm_label_dep2" id="dsm_label_dep2" value="<?php echo esc_attr( get_option( 'dsm_label_dep2', 'Depósito 2' ) ); ?>" class="regular-text" placeholder="Depósito 2" />
+                                    <span class="description">Nombre para Depósito 2</span>
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">Desinstalación</th>
                         <td>

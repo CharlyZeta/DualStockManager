@@ -1,5 +1,20 @@
 <div class="wrap dsm-wrap" x-data="dsmDashboard()">
     <h1 class="wp-heading-inline">Gestor de Stock Dual</h1>
+    <?php
+    $label_local = get_option( 'dsm_label_local', 'Showroom' );
+    $label_dep1  = get_option( 'dsm_label_dep1', 'Depósito 1' );
+    $label_dep2  = get_option( 'dsm_label_dep2', 'Depósito 2' );
+    ?>
+    
+    <!-- Print Header (Visible only in Print Mode) -->
+    <div class="dsm-print-header">
+        <h1>Inventario Dual Stock</h1>
+        <div class="dsm-print-summary">
+            <p><strong>Total Productos:</strong> <span x-text="stats.total"></span></p>
+            <p><strong>Discrepancias:</strong> <span x-text="stats.discrepancies"></span></p>
+            <p><strong>Categoría:</strong> <span x-text="selectedCategory ? (categories.find(c => c.id == selectedCategory)?.name || 'Seleccionada') : 'Todas'"></span></p>
+        </div>
+    </div>
     
     <div class="dsm-dashboard-widgets">
         <div class="dsm-card">
@@ -67,6 +82,15 @@
             
             <button class="button" @click="fetchInventory">Buscar</button>
             <button class="button" @click="clearSearch" x-show="searchQuery.length > 0 || selectedCategory !== ''">Limpiar</button>
+            
+            <div style="flex-grow: 1;"></div> <!-- Spacer -->
+            
+            <button class="button" @click="printInventory" title="Imprimir Listado Actual">
+                <span class="dashicons dashicons-printer" style="margin-top:3px;"></span> Imprimir
+            </button>
+            <button class="button" @click="exportExcel" title="Descargar como Excel">
+                <span class="dashicons dashicons-media-spreadsheet" style="margin-top:3px;"></span> Exportar Excel
+            </button>
         </div>
 
         <h2>Listado de Stock</h2>
@@ -75,12 +99,12 @@
             <table class="wp-list-table widefat fixed striped table-view-list">
                 <thead>
                     <tr>
-                        <th style="width: 25%;">Producto</th>
-                        <th>Showroom</th>
-                        <th>Depósito 1</th>
-                        <th>Depósito 2</th>
-                        <th>Control</th>
-                        <th>Stock WC</th>
+                        <th class="dsm-col-product">Producto</th>
+                        <th class="dsm-col-stock-local"><?php echo esc_html( $label_local ); ?></th>
+                        <th class="dsm-col-stock-dep1"><?php echo esc_html( $label_dep1 ); ?></th>
+                        <th class="dsm-col-stock-dep2"><?php echo esc_html( $label_dep2 ); ?></th>
+                        <th class="dsm-col-total">Control</th>
+                        <th class="dsm-col-wc">Stock WC</th>
                         <th class="dsm-col-status">Estado</th>
                         <th class="dsm-col-actions">Acción</th>
                     </tr>
@@ -88,31 +112,31 @@
                 <tbody>
                     <template x-for="item in filteredItems" :key="item.product_id">
                         <tr :class="isItemDiscrepancy(item) ? 'dsm-row-warning' : ''">
-                            <td x-text="'#' + item.product_id + ' - ' + item.post_title"></td>
+                            <td class="dsm-col-product" x-text="'#' + item.product_id + ' - ' + item.post_title"></td>
                             
                             <!-- Stock Showroom -->
-                            <td>
+                            <td class="dsm-col-stock-local">
                                 <input type="number" x-model.number="item.stock_local" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
                             </td>
                             
                             <!-- Stock Depo 1 -->
-                            <td>
+                            <td class="dsm-col-stock-dep1">
                                 <input type="number" x-model.number="item.stock_deposito_1" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
                             </td>
                             
                             <!-- Stock Depo 2 -->
-                            <td>
+                            <td class="dsm-col-stock-dep2">
                                 <input type="number" x-model.number="item.stock_deposito_2" @change="saveStock(item)" class="small-text dsm-live-edit" min="0">
                             </td>
                             
                             <!-- Calculated Total (Reactive) -->
-                            <td>
+                            <td class="dsm-col-total">
                                 <strong x-text="calculateTotal(item)"></strong>
                             </td>
                             
-                            <td x-text="item.wc_stock"></td> 
+                            <td class="dsm-col-wc" x-text="item.wc_stock"></td> 
                             
-                            <td>
+                            <td class="dsm-col-status">
                                 <span x-show="isItemDiscrepancy(item)" class="dashicons dashicons-warning" style="color:red" title="Discrepancia: Total Plugin no coincide con WC"></span>
                                 <span x-show="!isItemDiscrepancy(item)" class="dashicons dashicons-yes" style="color:green" title="Correcto"></span>
                                 
@@ -223,18 +247,18 @@
                 <div class="dsm-form-group">
                     <label>Desde:</label>
                     <select x-model="transferForm.from" class="widefat">
-                        <option value="stock_local">Showroom (<span x-text="getStockValue(transferForm.from)"></span>)</option>
-                        <option value="stock_deposito_1">Depósito 1 (<span x-text="getStockValue('stock_deposito_1')"></span>)</option>
-                        <option value="stock_deposito_2">Depósito 2 (<span x-text="getStockValue('stock_deposito_2')"></span>)</option>
+                        <option value="stock_local"><?php echo esc_html( $label_local ); ?> (<span x-text="getStockValue(transferForm.from)"></span>)</option>
+                        <option value="stock_deposito_1"><?php echo esc_html( $label_dep1 ); ?> (<span x-text="getStockValue('stock_deposito_1')"></span>)</option>
+                        <option value="stock_deposito_2"><?php echo esc_html( $label_dep2 ); ?> (<span x-text="getStockValue('stock_deposito_2')"></span>)</option>
                     </select>
                 </div>
 
                 <div class="dsm-form-group">
                     <label>Hacia:</label>
                     <select x-model="transferForm.to" class="widefat">
-                        <option value="stock_local" x-show="transferForm.from !== 'stock_local'">Showroom</option>
-                        <option value="stock_deposito_1" x-show="transferForm.from !== 'stock_deposito_1'">Depósito 1</option>
-                        <option value="stock_deposito_2" x-show="transferForm.from !== 'stock_deposito_2'">Depósito 2</option>
+                        <option value="stock_local" x-show="transferForm.from !== 'stock_local'"><?php echo esc_html( $label_local ); ?></option>
+                        <option value="stock_deposito_1" x-show="transferForm.from !== 'stock_deposito_1'"><?php echo esc_html( $label_dep1 ); ?></option>
+                        <option value="stock_deposito_2" x-show="transferForm.from !== 'stock_deposito_2'"><?php echo esc_html( $label_dep2 ); ?></option>
                     </select>
                 </div>
 
@@ -254,6 +278,10 @@
                 </button>
             </div>
         </div>
+    </div>
+    
+    <div class="dsm-print-footer">
+        <p>Generado el <span x-text="new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString()"></span> por DualStock Manager</p>
     </div>
 </div>
 
@@ -635,6 +663,95 @@ function dsmDashboard() {
             });
         },
         
+        printInventory() {
+            window.print();
+        },
+        
+        exportExcel() {
+            // Build HTML Table for Excel
+            let html = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <x:ExcelWorkbook>
+                            <x:ExcelWorksheets>
+                                <x:ExcelWorksheet>
+                                    <x:Name>Inventario Dual</x:Name>
+                                    <x:WorksheetOptions>
+                                        <x:DisplayGridlines/>
+                                    </x:WorksheetOptions>
+                                </x:ExcelWorksheet>
+                            </x:ExcelWorksheets>
+                        </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <meta charset="utf-8">
+                    <style>
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #000000; padding: 5px; text-align: center; }
+                        th { background-color: #f2f2f2; font-weight: bold; }
+                        .discrepancy { background-color: #ffcccc; color: #cc0000; font-weight: bold; }
+                        .text-left { text-align: left; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th class="text-left" style="width: 300px;">Producto</th>
+                                <th>${dsm_params.labels.local}</th>
+                                <th>${dsm_params.labels.dep1}</th>
+                                <th>${dsm_params.labels.dep2}</th>
+                                <th>Total Plugin</th>
+                                <th>WC Stock</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            this.filteredItems.forEach(item => {
+                let isDisc = this.isItemDiscrepancy(item);
+                let rowClass = isDisc ? 'class="discrepancy"' : '';
+                let status = isDisc ? 'Discrepancia' : 'OK';
+                
+                html += `
+                    <tr>
+                        <td>${item.product_id}</td>
+                        <td class="text-left">${item.post_title}</td>
+                        <td>${item.stock_local}</td>
+                        <td>${item.stock_deposito_1}</td>
+                        <td>${item.stock_deposito_2}</td>
+                        <td ${rowClass}>${this.calculateTotal(item)}</td>
+                        <td>${item.wc_stock}</td>
+                        <td ${rowClass}>${status}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            // Trigger Download
+            let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            let link = document.createElement("a");
+            if (link.download !== undefined) {
+                let url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "inventario_dual_" + new Date().toISOString().slice(0,10) + ".xls");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        },
+
         runDebugDB() {
             if(!confirm('¿Ejecutar diagnóstico de base de datos?')) return;
             

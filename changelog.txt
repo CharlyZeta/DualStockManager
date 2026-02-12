@@ -1,6 +1,55 @@
 
 === Changelog ===
 
+= 0.3.14 =
+*   Fix: Reemplazo de selectores CSS genéricos (`nth-child`) por clases específicas (`dsm-col-xxx`) en la tabla de dashboard para asegurar la alineación correcta al imprimir.
+
+= 0.3.13 =
+*   Tweak: Nuevo ajuste CSS para impresión. Producto al 45% con corte de texto (ellipsis), columnas numéricas visibles al 9%.
+
+= 0.3.12 =
+*   Fix: Mejoras en CSS de impresión. Uso de `table-layout: fixed` y anchos específicos (65% producto, 6% resto) para forzar la distribución de columnas.
+
+= 0.3.11 =
+*   Tweak: Ajuste de anchos de columna en impresión. Producto ocupa el 70% del ancho para evitar saltos de línea excesivos y ahorrar papel.
+
+= 0.3.10 =
+*   Cleanup: Eliminada página obsoleta "Transferir Stock" del menú. La funcionalidad se mantiene exclusivamente en el Dashboard mediante el ícono de transferencia.
+
+= 0.3.9 =
+*   Feature: Añadida configuración para personalizar nombres de almacenes (Settings > Nombres de Almacenes).
+*   Feature: Los nombres personalizados se reflejan en Dashboard, Modal de Transferencia y Exportación Excel.
+
+= 0.3.8 =
+*   Feature: Reemplazada exportación CSV por Excel (.xls) nativo con formato básico (colores de alerta).
+
+= 0.3.7 =
+*   Fix: Eliminada regla CSS global que ocultaba todos los íconos en impresión, permitiendo visualizar el estado correctamente.
+
+= 0.3.6 =
+*   Fix: Corregido error en impresión donde ambos íconos de estado aparecían simultáneamente.
+
+= 0.3.5 =
+*   Fix: Forzado borrado de caché de estilos para asegurar visualización correcta en impresión.
+*   Fix: Mejorada la especificidad CSS para mostrar columna "Estado" en reportes.
+
+= 0.3.4 =
+*   UI: Fix visualización impresión: Restaurada columna de estado (íconos visibles).
+*   UI: Optimización anchos de columna en impresión (Producto maximizado, resto minimizado).
+
+= 0.3.3 =
+*   UI: Fix visualización impresión: Ocultadas columnas 'Estado' y 'Acción'.
+*   UI: Eliminadas barras de desplazamiento indeseadas en modo impresión.
+
+= 0.3.2 =
+*   UI: Refinamiento de diseño de impresión (Header resumen, Footer con fecha, ocultar widgets).
+*   UI: Limpieza visual de tablas para impresión (estilo reporte).
+
+= 0.3.1 =
+*   Feature: Agregado botón "Imprimir" optimizado para formato A4 (oculta menús y destaca discrepancias).
+*   Feature: Agregado botón "Exportar CSV" para descargar el listado actual.
+*   UI: Estilos CSS dedicados para impresión (@media print).
+
 = 0.3.0 =
 *   Feature: Nueva página de Ajustes (Settings).
 *   Feature: Opción de "Desinstalación Limpia" para borrar tablas y datos al eliminar el plugin.

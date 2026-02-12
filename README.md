@@ -1,44 +1,44 @@
 # DualStock Manager
 
-**Version:** 0.3.0
+**Version:** 0.3.14
 **Description:** Omnichannel stock control plugin for WooCommerce. Manages multi-location inventory (Showroom, Deposito 1, Deposito 2) and synchronizes the total with WooCommerce.
 
 ## Core Concepts
 
-1.  **Single Source of Truth**: The plugin's inventory table (`wp_dual_inventory`) is the master record for physical stock.
-2.  **Locations**:
-    *   **Showroom (Local)**: Stock available for immediate sale/pickup.
-    *   **Deposito 1**: Warehouse 1.
-    *   **Deposito 2**: Warehouse 2.
-3.  **Discrepancy Model**: The plugin tracks the difference between its total and WooCommerce's stock. It allows for manual "Push" synchronization to fix these discrepancies without automatic interference during order placement (user preference).
+*   **Dual Inventory**: The plugin maintains its own inventory values for three locations:
+    1.  **Local/Showroom** (Customizable Name)
+    2.  **Depósito 1** (Customizable Name)
+    3.  **Depósito 2** (Customizable Name)
+*   **Total Plugin**: The sum of these three locations.
+*   **Fix WC**: A one-way synchronization that updates the **WooCommerce Stock** to match the **Total Plugin** value.
+*   **Logs**: Every change (edit, transfer, sync) is recorded in a separate database table (`wp_dual_inventory_logs`) for audit purposes.
 
 ## Features
 
-### 1. Dashboard & Spreadsheet Editing
-*   **Live Editing**: Direct "Spreadsheet-style" editing of stock numbers in the dashboard. Changes are saved automatically via AJAX.
-*   **Real-time Calculations**: Total stock and discrepancies are recalculated instantly as you type.
-*   **Visual Feedback**:
-    *   **Green/Red Indicators**: Instantly see if Plugin Total matches WooCommerce.
-    *   **Saving Spinners**: Visual confirmation when data is being written to the DB.
-*   **Alpine.js**: Reactive, lag-free interface.
+### 1. Unified Dashboard
+*   View all products with their stock broken down by location.
+*   **Spreadsheet Mode**: Click any stock number to edit it directly. Changes auto-save.
+*   **Real-time Status**: Green checkmark if Plugin Total matches WooCommerce. Red warning icon if there is a discrepancy.
+*   **Filters**: Filter by Category or Search by Name/ID.
 
 ### 2. Stock Transfer
-*   **Inline Transfers**: "Transfer" button on every row to move stock between locations (e.g., Deposito 1 -> Showroom).
-*   **Smart Validation**: Prevents negative stock; ensures source and destination are different.
-*   **Logging**: Every transfer is recorded in the history log.
+*   Move stock between locations (e.g., from Showroom to Depósito 1) without affecting the total count.
+*   Click the "Transfer" button (arrows icon) on any product row.
 
-### 3. History & Logs (Audit Trail)
-*   **Complete History**: A dedicated "Historial de Cambios" tab tracks EVERY change.
-    *   **Who**: User who made the change.
-    *   **What**: Product and strict before/after values.
-    *   **When**: Exact timestamp.
-*   **Revert Capability**: Undo any action (Edit or Transfer) with a single click.
-*   **Daily Stats**: Quick summary of today's edits and transfers.
+### 3. History & Logs
+*   **Audit Trail**: View a history of all changes for every product.
+*   **Revert**: Undo any specific action to restore previous stock values.
+*   **Visual Indicators**: Color-coded badges for Edits vs Transfers.
 
 ### 4. Scanner (Audit)
 *   **Audit Mode**: Scan a product barcode to instantly retrieve its status.
 
-### 5. Settings & Cleanup
+### 5. Print & Export
+*   **Print**: Optimizado para A4. Imprime el listado actual (con filtros aplicados) destacando discrepancias.
+*   **Excel (.xls)**: Exporta el listado visible a un archivo Excel con formato básico (colores para discrepancias).
+
+### 6. Settings & Cleanup
+*   **Customize Labels**: Change the display names for your warehouses (e.g., "Main Store", "Backroom", "External").
 *   **Clean Uninstall**: Option to automatically delete all plugin data (tables and settings) upon uninstallation.
 *   Located under **Dual Inventory > Settings**.
 
